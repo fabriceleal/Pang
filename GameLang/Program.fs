@@ -18,17 +18,17 @@ let testString text =
 //                        (print (* 2 (+ 1 1)))
 //                        (print \"length:\")
 //                        (print (length (list 1 2 3)))"
-//let test = testString "(print (cons 1 2))
-//                        (print (cons 1 (cons 2 (cons 3 nil))))"
+let test = testString "(print (cons 1 2))
+                        (print (cons 1 (cons 2 (cons 3 nil))))"
 //let test = testString "(let ((x 10) (y 20) (z (+ 15 15)))
 //                            (print (+ x y z)) )"
 //let test = testString "(print
 //                            (let ((x 10))
 //                                (print (/ x 2))
 //                                x) )"
-let test = testString "(print
-                            (let* ((x 10) (y (+ x 10)) (z (+ y 10))) 
-                                (+ x y z) ) )"
+//let test = testString "(print
+//                            (let* ((x 10) (y (+ x 10)) (z (+ y 10))) 
+//                                (+ x y z) ) )"
 
 //printfn "Printing AST ..."
 //List.map (printfn "%s") (List.map PrintSexp test) |> ignore

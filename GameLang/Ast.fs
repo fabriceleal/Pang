@@ -42,10 +42,8 @@ type SObject =
         | Cons(something, tail) -> Cons(f something, tail.ConsMap f)
         | _ -> failwith "Only for cons lists!";;
 
-
-// Environment
-type Env = 
-    val inner : Option<Env>
+type EnvImpl = 
+    val inner : Option<EnvImpl>
     val dict : Dictionary<string, SObject>
 
     new() = { inner = None; dict = new Dictionary<string, SObject>(); }
@@ -53,7 +51,7 @@ type Env =
     
     // Call this when entering a new scope
     member this.Wrap() =
-        new Env(this)
+        new EnvImpl(this)
 
     // Call this when exiting a scope (if necessary)
     member this.Unwrap() =
@@ -78,6 +76,27 @@ type Env =
             this.dict.[key] <- ob            
         else
             this.dict.Add(key, ob)
+        this;;
+
+// Environment
+type Env = 
+    val mutable e : EnvImpl
+
+    new() = { e = new EnvImpl(); }
+
+    member this.Wrap() =
+        this.e <- this.e.Wrap()
+        this
+
+    member this.Unwrap() =
+        this.e <- this.e.Unwrap()
+        this
+
+    member this.lookup(key) =
+        this.e.lookup(key)
+
+    member this.put(key, ob) =
+        this.e.put(key, ob) |> ignore
         this;;
 
 
@@ -188,6 +207,10 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
 
 
 let rec PrintSexp = function
+    | Let_Star(bindings, sexpr) ->
+        String.Format("Let({0}, {1})", 
+            PrintSexp bindings, 
+            List.map PrintSexp sexpr)
     | Let(bindings, sexpr) ->
         String.Format("Let({0}, {1})", 
             PrintSexp bindings, 
@@ -217,22 +240,28 @@ let rec ParseAst (env : Env) ast =
         bindings.ConsMap (
             function
             | Cons(Atom(name), value) ->
+                // Parse and add bindings to new environment
                 let parsed = ParseAst new_env value
-                new_env.put(name, parsed) |> ignore                
+                new_env.put(name, parsed) |> ignore 
+                // Create a clean env before continuing
+                new_env.Wrap() |> ignore             
                 parsed
             | _ -> failwith "WTF???") |> ignore
         // Return last parsed element
         List.map (ParseAst new_env) sexpr |> List.rev |> List.head
     | Let(bindings, sexpr) ->
         let new_env = env.Wrap()
-        // Parse and add bindings to new environment
         bindings.ConsMap (
             function
             | Cons(Atom(name), value) ->
+                // Parse and add bindings to new environment
                 let parsed = ParseAst env value
                 new_env.put(name, parsed) |> ignore
                 parsed
             | _ -> failwith "WTF???") |> ignore
+        // Make a clean env before parsing sexpr
+        new_env.Wrap() |> ignore
+        // Parse; 
         // Return last parsed element
         List.map (ParseAst new_env) sexpr |> List.rev |> List.head
     | Define(identifier, exp) ->
