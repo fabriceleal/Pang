@@ -26,6 +26,12 @@ type SObject =
         | NIL -> "NIL"
         | True -> "T"
 
+    member this.ConsMap (f : SObject -> SObject) =
+        match this with
+        | Cons(something, NIL) -> Cons(f something, NIL)
+        | Cons(something, tail) -> Cons(f something, tail.ConsMap f)
+        | _ -> failwith "Only for cons lists!"
+
 // Environment
 type Env = 
     val inner : Option<Env>
@@ -64,6 +70,44 @@ type Env =
         this;;
 
 
+// We already receive the arguments as a cons list,
+// just return the arguments :)
+let SysList (args: SObject) : SObject =
+    args;;
+
+
+let rec SysLength (args: SObject) : SObject =
+    match args with
+    | Cons(to_length, _) ->
+        match to_length with
+        | NIL -> Int(0)
+        | Cons(_, tail) ->
+            // We need to wrap the argument in another cons
+            match SysLength(Cons(tail, NIL)) with
+            | Int(i) -> Int(1 + i)
+            | _ -> failwith "Oh boy, WTF?!?!?!"
+        | _ -> failwith "Really, WTF???"
+    | _ -> failwith "WTF?";;
+
+
+let SysCar (args: SObject) : SObject =
+    match args with
+    | Cons(to_car, _) ->
+        match to_car with
+        | Cons(car, _) -> car
+        | _ -> failwith "Really, WTF???"
+    | _ -> failwith "WTF?";;
+
+
+let SysCdr (args: SObject) : SObject =
+    match args with
+    | Cons(to_car, _) ->
+        match to_car with
+        | Cons(_, cdr) -> cdr
+        | _ -> failwith "Really, WTF???"
+    | _ -> failwith "WTF?";;
+
+
 let SysPrint (args : SObject) : SObject = 
     match args with
     | Cons(to_print, _) ->
@@ -73,29 +117,48 @@ let SysPrint (args : SObject) : SObject =
     | _ -> failwith "WTF?";;
 
 
-let rec SysAdd (args: SObject) : SObject =
-    match args with
-    | Cons(NIL, NIL) ->
-        Float(0.0)
-    | Cons(Float(add1), NIL) ->
-        Float(add1)
-    | Cons(Int(add1), NIL) ->
-        Float(add1 |> float)
-    | Cons(Float(add1), tail) -> 
-        match SysAdd(tail) with
-        | Float(v) -> Float(add1 + v)
-        | _ ->  failwith "Invalid return of +"
-    | Cons(Int(add1), tail) -> 
-        match SysAdd(tail) with
-        | Float(v) -> Float((add1 |> float) + v)
-        | _ ->  failwith "Invalid return of +"
-    | _ -> failwith "Invalid arguments to +";;
+// This does not evaluate exactly 
+// like common lisp
+let SysArith (name : String) (nullelement : float) (func : float -> float -> float) (args: SObject) : SObject =
+    let rec __SysArith (args: SObject) = 
+        match args with
+        | Cons(NIL, NIL) ->
+            Float(nullelement)
+        | Cons(Float(add1), NIL) ->
+            Float(add1)
+        | Cons(Int(add1), NIL) ->
+            Float(add1 |> float)
+        | Cons(Float(add1), tail) -> 
+            match __SysArith tail with
+            | Float(v) -> Float(func add1 v)
+            | _ ->  failwith ("Invalid return of " + name)
+        | Cons(Int(add1), tail) -> 
+            match __SysArith tail with
+            | Float(v) -> Float(func (add1 |> float) v)
+            | _ ->  failwith ("Invalid return of " + name)
+        | _ -> failwith ("Invalid arguments to " + name)
+    
+    __SysArith args;;
 
+let SysDiv = SysArith "/" 1.0 (/);;
+
+let SysMult = SysArith "*" 1.0 (*);;
+
+let SysSub = SysArith "-" 0.0 (-);;
+
+let SysAdd = SysArith "+" 0.0 (+);;
 
 let CoreEnv () =
     let e = new Env();
     e.put("print", Function(SysPrint)).
-      put("+", Function(SysAdd));;
+      put("+", Function(SysAdd)).
+      put("*", Function(SysMult)).
+      put("-", Function(SysSub)).
+      put("/", Function(SysDiv)).
+      put("car", Function(SysCar)).
+      put("cdr", Function(SysCdr)).
+      put("list", Function(SysList)).
+      put("length", Function(SysLength));;
 
 
 let rec AppendCons (cons : SObject) (tail : SObject) =
@@ -123,9 +186,16 @@ let rec ParseAst (env : Env) ast =
     | Cons(_fn, _args) ->
         match _fn with 
         | Atom(name) -> 
+            // Try to find function in environment
             match env.lookup(name) with
-            | Function(native) -> native(_args)
+            | Function(native) ->
+                // Evaluate arguments and call native function
+                _args.ConsMap (ParseAst env) |> native
             | _ -> failwith "Expected a function!"
         | _ -> failwith "Unexpected head of list in function application!"
+    // Lookup identifiers
+    | Atom(name) -> env.lookup(name)
+    // Atomic literals evalutate to themselves
+    | String(_) | Int(_) | Float(_) | NIL | True -> ast
     | _ -> failwith "Error!";;
     
