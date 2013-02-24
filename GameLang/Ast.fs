@@ -8,15 +8,24 @@ type SObject =
     | Cons of SObject * SObject
     | Atom of string
     | Int of int
+    | Let_Star of SObject * list<SObject>
+    | Let of SObject * list<SObject>
     | Float of float
     | Lambda of SObject * SObject
     | Function of (SObject -> SObject)
+    | If of SObject * SObject * SObject
+    | Define of SObject * SObject
     | String of string
     | NIL
     | True
     override this.ToString() =
         match this with
-        | Cons(h, t) -> "<cons>"
+        | Cons(c, NIL) ->
+            String.Format("({0})", c.ToString())
+        | Cons(c, t) ->
+            match t with
+            | Cons(_, _) -> String.Format("({0} {1})", c.ToString(), t.ToString())
+            | _ -> String.Format("({0} . {1})", c.ToString(), t.ToString())
         | Atom(s) -> s
         | Int(i) -> i.ToString()
         | Float(f) -> f.ToString()
@@ -25,12 +34,14 @@ type SObject =
         | String(s) -> String.Format("\"{0}\"", s)
         | NIL -> "NIL"
         | True -> "T"
+        | _ -> failwith "Only for literals and values!"
 
     member this.ConsMap (f : SObject -> SObject) =
         match this with
         | Cons(something, NIL) -> Cons(f something, NIL)
         | Cons(something, tail) -> Cons(f something, tail.ConsMap f)
-        | _ -> failwith "Only for cons lists!"
+        | _ -> failwith "Only for cons lists!";;
+
 
 // Environment
 type Env = 
@@ -74,6 +85,13 @@ type Env =
 // just return the arguments :)
 let SysList (args: SObject) : SObject =
     args;;
+
+
+let SysCons (args: SObject) : SObject =
+    match args with
+    | Cons(car, Cons(cdr, NIL)) ->
+        Cons(car, cdr)
+    | _ -> failwith "WTF?";;
 
 
 let rec SysLength (args: SObject) : SObject =
@@ -158,7 +176,8 @@ let CoreEnv () =
       put("car", Function(SysCar)).
       put("cdr", Function(SysCdr)).
       put("list", Function(SysList)).
-      put("length", Function(SysLength));;
+      put("length", Function(SysLength)).
+      put("cons", Function(SysCons));;
 
 
 let rec AppendCons (cons : SObject) (tail : SObject) =
@@ -169,12 +188,22 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
 
 
 let rec PrintSexp = function
-    | Cons(head, tail) -> String.Format("Cons({0}, {1})", PrintSexp head, PrintSexp tail)
+    | Let(bindings, sexpr) ->
+        String.Format("Let({0}, {1})", 
+            PrintSexp bindings, 
+            List.map PrintSexp sexpr)
+    | Define(id, exp) ->
+        String.Format("Define({0}, {1})", PrintSexp id, PrintSexp exp)
+    | If(condition, trueBr, falseBr) ->
+        String.Format("If({0}, {1}, {2})", PrintSexp condition, PrintSexp trueBr, PrintSexp falseBr)
+    | Cons(head, tail) -> 
+        String.Format("Cons({0}, {1})", PrintSexp head, PrintSexp tail)
     | Atom(name) -> String.Format("Atom({0})", name)                 
     | Int(n) -> String.Format("Int({0})", n)
     | Float(f) -> String.Format("Float{0})", f)
     | String(s) -> String.Format("String({0})", s)
-    | Lambda(args, body) -> String.Format("Lambda({0}, {1})", PrintSexp args, PrintSexp body)
+    | Lambda(args, body) -> 
+        String.Format("Lambda({0}, {1})", PrintSexp args, PrintSexp body)
     | Function(_) -> String.Format("Native Function")
     | True -> String.Format("#True")
     | NIL -> String.Format("NIL");; 
@@ -182,6 +211,42 @@ let rec PrintSexp = function
 
 let rec ParseAst (env : Env) ast =
     match ast with
+    | Let_Star(bindings, sexpr) ->
+        let new_env = env.Wrap()
+        // Parse and add bindings to new environment
+        bindings.ConsMap (
+            function
+            | Cons(Atom(name), value) ->
+                let parsed = ParseAst new_env value
+                new_env.put(name, parsed) |> ignore                
+                parsed
+            | _ -> failwith "WTF???") |> ignore
+        // Return last parsed element
+        List.map (ParseAst new_env) sexpr |> List.rev |> List.head
+    | Let(bindings, sexpr) ->
+        let new_env = env.Wrap()
+        // Parse and add bindings to new environment
+        bindings.ConsMap (
+            function
+            | Cons(Atom(name), value) ->
+                let parsed = ParseAst env value
+                new_env.put(name, parsed) |> ignore
+                parsed
+            | _ -> failwith "WTF???") |> ignore
+        // Return last parsed element
+        List.map (ParseAst new_env) sexpr |> List.rev |> List.head
+    | Define(identifier, exp) ->
+        match identifier with
+        | Atom(name) ->
+            let parse = ParseAst env exp
+            env.put(name, parse) |> ignore
+            parse
+        | _ -> failwith "Invalid define!"
+    // if
+    | If(_condition, _true_branch, _false_branch) ->
+        match ParseAst env _condition with
+        | NIL -> ParseAst env _false_branch
+        | _ -> ParseAst env _true_branch
     // Function application
     | Cons(_fn, _args) ->
         match _fn with 

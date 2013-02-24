@@ -31,6 +31,10 @@ rule tokenstream = parse
 | "nil"					{ Parser.ATOM_NIL }
 | "#T"					{ Parser.TRUE }
 | "lambda"				{ Parser.LAMBDA }
+| "let*"				{ Parser.LET_STAR }
+| "let"					{ Parser.LET }
+| "if"					{ Parser.IF }
+| "define"				{ Parser.DEFINE }
 | id			{ Parser.IDENTIFIER(LexBuffer.LexemeString lexbuf) }
 | ['-']?digit+  { Parser.INT(Int32.Parse(LexBuffer.LexemeString lexbuf)) }
 | ['-']?digit+('.'digit+)?(['e''E']digit+)?  { Parser.FLOAT(Double.Parse(LexBuffer.LexemeString lexbuf)) }

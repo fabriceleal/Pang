@@ -15,6 +15,11 @@ open Ast
 %token ATOM_NIL
 %token TRUE
 %token LAMBDA
+%token LET
+%token LET_STAR
+%token IF
+%token DEFINE
+
 
 // Misc tokens
 %token EOF
@@ -37,6 +42,10 @@ Sexpr_Plus:
 	| Sexpr_Plus Sexpr				{ List.append $1 [ $2 ] }
 
 Sexpr:
+	| Define						{ $1 }
+	| If							{ $1 }
+	| Let_Star						{ $1 }
+	| Let							{ $1 }
 	| Lambda						{ $1 }
 	| List							{ $1 }
 	| Atom							{ $1 }
@@ -48,10 +57,13 @@ List:
 Atom:
 	| ATOM_NIL						{ NIL }
 	| TRUE							{ True }
-	| IDENTIFIER					{ Atom($1) }
+	| Identifier					{ $1 }
 	| STRING						{ String($1) }
 	| FLOAT							{ Float($1) }
 	| INT							{ Int($1) }
+
+Identifier:
+	| IDENTIFIER					{ Atom($1) }
 
 Sexpr_Consed:
 	| Sexpr							{ Cons($1, NIL) }
@@ -67,3 +79,22 @@ Atom_Consed:
 
 Lambda:
 	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Lambda($3, $4) }
+
+If:
+	| OPEN_PAREN IF Sexpr Sexpr Sexpr CLOSE_PAREN	{ If($3, $4, $5) }
+
+Define:
+	| OPEN_PAREN DEFINE Identifier Sexpr CLOSE_PAREN { Define($3, $4) }
+
+Let:
+	| OPEN_PAREN LET OPEN_PAREN Let_Binding_Plus CLOSE_PAREN Sexpr_Plus CLOSE_PAREN	{ Let($4, $6) }
+
+Let_Star:
+	| OPEN_PAREN LET_STAR OPEN_PAREN Let_Binding_Plus CLOSE_PAREN Sexpr_Plus CLOSE_PAREN	{ Let_Star($4, $6) }
+
+Let_Binding_Plus:
+	| Let_Binding					{ Cons($1, NIL)}
+	| Let_Binding_Plus Let_Binding	{ AppendCons $1 $2 }
+
+Let_Binding: 
+	| OPEN_PAREN Atom Sexpr CLOSE_PAREN	{ Cons($2, $3)}
