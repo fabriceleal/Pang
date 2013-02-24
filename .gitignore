@@ -1,0 +1,9 @@
+*.suo
+[Bb]in
+[Dd]ebug*/
+[Rr]elease*/
+[Bb]uild/
+
+Lexer.fs
+Parser.fs
+Parser.fsi

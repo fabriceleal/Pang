@@ -1,0 +1,69 @@
+﻿%{
+open Ast
+%}
+
+// The start token becomes a parser function in the compiled code:
+%start start
+
+// Regular tokens
+%token < string > IDENTIFIER
+%token < string > STRING
+%token < double > FLOAT
+%token < int > INT
+%token OPEN_PAREN
+%token CLOSE_PAREN
+%token ATOM_NIL
+%token TRUE
+%token LAMBDA
+
+// Misc tokens
+%token EOF
+
+// This is the type of the data produced by a successful reduction of the 'start'
+// symbol:
+%type < Ast.SObject list > start
+
+%%
+
+// These are the rules of the grammar along with the F# code of the 
+// actions executed as rules are reduced.  
+start: File EOF						{ $1 }
+
+File:
+	| Sexpr_Plus					{ $1 }
+
+Sexpr_Plus:
+	| Sexpr							{ [ $1 ] }
+	| Sexpr_Plus Sexpr				{ List.append $1 [ $2 ] }
+
+Sexpr:
+	| Lambda						{ $1 }
+	| List							{ $1 }
+	| Atom							{ $1 }
+
+List:
+	| OPEN_PAREN CLOSE_PAREN		{ NIL }
+	| OPEN_PAREN Sexpr_Consed CLOSE_PAREN	{ $2 }
+
+Atom:
+	| ATOM_NIL						{ NIL }
+	| TRUE							{ True }
+	| IDENTIFIER					{ Atom($1) }
+	| STRING						{ String($1) }
+	| FLOAT							{ Float($1) }
+	| INT							{ Int($1) }
+
+Sexpr_Consed:
+	| Sexpr							{ Cons($1, NIL) }
+	| Sexpr_Consed Sexpr			{ AppendCons $1 $2 }
+
+List_of_Identifiers:
+	| OPEN_PAREN CLOSE_PAREN				{ NIL }
+	| OPEN_PAREN Atom_Consed CLOSE_PAREN	{ $2 }
+
+Atom_Consed:
+	| Atom							{ Cons($1, NIL) }
+	| Atom_Consed Atom				{ AppendCons $1 $2 }
+
+Lambda:
+	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Lambda($3, $4) }
