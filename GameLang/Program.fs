@@ -10,28 +10,43 @@ let testString text =
     Parser.start Lexer.tokenstream (LexBuffer<char>.FromString text)
 
 //let test = testString " (if (list 1 2 3)
-//                            (print #T)
-//                            (print NIL))
-//                        (print \"hello world\")
-//                        (print (+ 1 1))
-//                        (print (/ 1 2 3))
-//                        (print (* 2 (+ 1 1)))
-//                        (print \"length:\")
-//                        (print (length (list 1 2 3)))"
-let test = testString "(print (cons 1 2))
-                        (print (cons 1 (cons 2 (cons 3 nil))))"
+//                            (display #T)
+//                            (display NIL))
+//                        (display \"hello world\")
+//                        (display (+ 1 1))
+//                        (display (/ 1 2 3))
+//                        (display (* 2 (+ 1 1)))
+//                        (display \"length:\")
+//                        (display (length (list 1 2 3)))"
+
+//let test = testString "(display (cons 1 2))
+//                        (display (cons 1 (cons 2 (cons 3 nil))))"
+
 //let test = testString "(let ((x 10) (y 20) (z (+ 15 15)))
-//                            (print (+ x y z)) )"
-//let test = testString "(print
+//                            (display (+ x y z)) )"
+
+//let test = testString "(display
 //                            (let ((x 10))
-//                                (print (/ x 2))
+//                                (display (/ x 2))
 //                                x) )"
-//let test = testString "(print
+
+//let test = testString "(display
 //                            (let* ((x 10) (y (+ x 10)) (z (+ y 10))) 
 //                                (+ x y z) ) )"
 
-//printfn "Printing AST ..."
-//List.map (printfn "%s") (List.map PrintSexp test) |> ignore
+let test = testString "(display '(hello world))
+                        (display (quote (hello world)))
+                        (display (list 'hello 'world))
+                        (display (cons 'hello (cons 'world nil)))"
+
+//printfn "displaying AST ..."
+//List.map (printfn "%s") (List.map displaySexp test) |> ignore
+
+//Cons(SObject.Int(1), Cons(SObject.Int(2), Cons(SObject.Int(3), NIL))) |> ConsToString |> printfn "%s"
+//Cons(SObject.Int(1), Cons(Cons(SObject.Int(2), SObject.Int(4)), Cons(SObject.Int(3), NIL))) |> ConsToString |> printfn "%s"
+//Cons(Cons(SObject.Int(1), Cons(SObject.Int(2), Cons(SObject.Int(3), NIL))), Cons(Cons(SObject.Int(2), SObject.Int(4)), Cons(SObject.Int(3), NIL))) |> ConsToString |> printfn "%s"
+//Cons(Cons(SObject.Int(1), Cons(SObject.Int(2), Cons(SObject.Int(3), NIL))), Cons(Cons(SObject.Int(2), SObject.Int(4)), Cons(SObject.Int(1), Cons(SObject.Int(2), Cons(SObject.Int(3), NIL))))) |> ConsToString |> printfn "%s"
+//Cons(Cons(SObject.Int(1), Cons(SObject.Int(2), Cons(SObject.Int(3), NIL))), Cons(Cons(SObject.Int(2), SObject.Int(4)), Cons(Cons(SObject.Int(1), Cons(SObject.Int(2), Cons(SObject.Int(3), NIL))), NIL))) |> ConsToString |> printfn "%s"
 
 printfn "Executing code ..."
 List.map (ParseAst (CoreEnv())) test |> ignore

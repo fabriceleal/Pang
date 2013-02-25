@@ -19,6 +19,8 @@ open Ast
 %token LET_STAR
 %token IF
 %token DEFINE
+%token QUOTE
+%token QUOTE_STRING
 
 
 // Misc tokens
@@ -47,6 +49,7 @@ Sexpr:
 	| Let_Star						{ $1 }
 	| Let							{ $1 }
 	| Lambda						{ $1 }
+	| Quote							{ $1 }
 	| List							{ $1 }
 	| Atom							{ $1 }
 
@@ -97,4 +100,8 @@ Let_Binding_Plus:
 	| Let_Binding_Plus Let_Binding	{ AppendCons $1 $2 }
 
 Let_Binding: 
-	| OPEN_PAREN Atom Sexpr CLOSE_PAREN	{ Cons($2, $3)}
+	| OPEN_PAREN Atom Sexpr CLOSE_PAREN	{ Cons($2, $3) }
+
+Quote:
+	| OPEN_PAREN QUOTE_STRING Sexpr CLOSE_PAREN { Quote($3) }
+	| QUOTE Sexpr { Quote($2) }

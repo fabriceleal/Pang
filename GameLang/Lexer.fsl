@@ -22,7 +22,7 @@ let alphanum = letter | digit
 let id = letter alphanum*
 let quote_char = '"'
 let notquote_char = [^'"']
-
+let quote_single = '\''
 
 rule tokenstream = parse
 // --------------------------
@@ -35,6 +35,8 @@ rule tokenstream = parse
 | "let"					{ Parser.LET }
 | "if"					{ Parser.IF }
 | "define"				{ Parser.DEFINE }
+| "quote"				{ Parser.QUOTE_STRING }
+| quote_single			{ Parser.QUOTE }
 | id			{ Parser.IDENTIFIER(LexBuffer.LexemeString lexbuf) }
 | ['-']?digit+  { Parser.INT(Int32.Parse(LexBuffer.LexemeString lexbuf)) }
 | ['-']?digit+('.'digit+)?(['e''E']digit+)?  { Parser.FLOAT(Double.Parse(LexBuffer.LexemeString lexbuf)) }

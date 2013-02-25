@@ -15,17 +15,21 @@ type SObject =
     | Function of (SObject -> SObject)
     | If of SObject * SObject * SObject
     | Define of SObject * SObject
+    | Quote of SObject
     | String of string
     | NIL
     | True
     override this.ToString() =
         match this with
-        | Cons(c, NIL) ->
-            String.Format("({0})", c.ToString())
-        | Cons(c, t) ->
-            match t with
-            | Cons(_, _) -> String.Format("({0} {1})", c.ToString(), t.ToString())
-            | _ -> String.Format("({0} . {1})", c.ToString(), t.ToString())
+        // This is a list
+        | Cons(_, Cons(_, _)) -> 
+            let (stringified : list<string>) = this.Map (fun x -> x.ToString())
+            String.Format("({0})", List.fold (fun tot it -> tot + " " + it) stringified.Head stringified.Tail)
+        // A one element list
+        | Cons(h, NIL) -> String.Format("({0})", h.ToString())
+        // A cons cell
+        | Cons(fst, snd) -> String.Format("({0} . {1})", fst.ToString(), snd.ToString())
+        // Scalar types
         | Atom(s) -> s
         | Int(i) -> i.ToString()
         | Float(f) -> f.ToString()
@@ -36,11 +40,29 @@ type SObject =
         | True -> "T"
         | _ -> failwith "Only for literals and values!"
 
+    member this.Map (f : SObject -> _) =
+        match this with
+        | Cons(something, NIL) -> [ f something ]
+        | Cons(something, tail) -> f something :: tail.Map f
+        | _ -> failwith "Only for cons lists!"
+
     member this.ConsMap (f : SObject -> SObject) =
         match this with
         | Cons(something, NIL) -> Cons(f something, NIL)
         | Cons(something, tail) -> Cons(f something, tail.ConsMap f)
         | _ -> failwith "Only for cons lists!";;
+
+//let rec ConsToString cell = 
+//    match cell with
+//    // This is a list
+//    | Cons(_, Cons(_, _)) -> 
+//        let stringified = cell.Map ConsToString
+//        String.Format("({0})", List.fold (fun tot it -> tot + " " + it) stringified.Head stringified.Tail)
+//    // A one element list
+//    | Cons(h, NIL) -> String.Format("({0})", h.ToString())
+//    // A cons cell
+//    | Cons(fst, snd) -> String.Format("({0} . {1})", fst.ToString(), snd.ToString())
+//    | _ -> cell.ToString();;
 
 type EnvImpl = 
     val inner : Option<EnvImpl>
@@ -73,7 +95,7 @@ type EnvImpl =
     // Return the environment itself
     member this.put(key, ob) =
         if this.dict.ContainsKey(key) then
-            this.dict.[key] <- ob            
+            failwith "You can't mutate an existing var with put!"
         else
             this.dict.Add(key, ob)
         this;;
@@ -145,12 +167,12 @@ let SysCdr (args: SObject) : SObject =
     | _ -> failwith "WTF?";;
 
 
-let SysPrint (args : SObject) : SObject = 
+let SysDisplay (args : SObject) : SObject = 
     match args with
-    | Cons(to_print, _) ->
-        let printed = to_print.ToString()
-        Console.WriteLine printed |> ignore
-        String(printed)
+    | Cons(to_display, _) ->
+        let displayed = to_display.ToString()
+        Console.WriteLine displayed |> ignore
+        String(displayed)
     | _ -> failwith "WTF?";;
 
 
@@ -187,7 +209,7 @@ let SysAdd = SysArith "+" 0.0 (+);;
 
 let CoreEnv () =
     let e = new Env();
-    e.put("print", Function(SysPrint)).
+    e.put("display", Function(SysDisplay)).
       put("+", Function(SysAdd)).
       put("*", Function(SysMult)).
       put("-", Function(SysSub)).
@@ -207,6 +229,8 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
 
 
 let rec PrintSexp = function
+    | Quote(sexpr) ->
+        String.Format("Quote({0})", [PrintSexp sexpr])
     | Let_Star(bindings, sexpr) ->
         String.Format("Let({0}, {1})", 
             PrintSexp bindings, 
@@ -227,13 +251,14 @@ let rec PrintSexp = function
     | String(s) -> String.Format("String({0})", s)
     | Lambda(args, body) -> 
         String.Format("Lambda({0}, {1})", PrintSexp args, PrintSexp body)
-    | Function(_) -> String.Format("Native Function")
-    | True -> String.Format("#True")
-    | NIL -> String.Format("NIL");; 
+    | Function(_) -> "Native Function"
+    | True -> "#True"
+    | NIL -> "NIL";; 
 
 
 let rec ParseAst (env : Env) ast =
     match ast with
+    | Quote(sexpr) -> sexpr
     | Let_Star(bindings, sexpr) ->
         let new_env = env.Wrap()
         // Parse and add bindings to new environment
