@@ -56,10 +56,11 @@ let testString text =
 //                                                (* n (factorial (- n 1))))))
 //                       (display (factorial 5))"
 
-//let test = testString "(define x (lambda () (display 1)))
-//                        (x)"
+let test = testString "(define x (lambda () (display 1)))
+                        (x)
+                        (display ((lambda (n) (+ n n)) 1))"
 
-let test = testString ""
+//let test = testString ""
 
 //printfn "displaying AST ..."
 //List.map (printfn "%s") (List.map displaySexp test) |> ignore

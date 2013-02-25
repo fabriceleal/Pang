@@ -265,6 +265,12 @@ let SysEq (args : SObject) =
         | _, _ -> NIL
     | _ -> failwith "Expecting 2 arguments!"
 
+//let SysApply (args : SObject) =
+//    match args with
+//    | Cons(fun_to_call, arguments) ->
+//        
+//    | _ -> failwith "Expecting at least 1 argument!"
+
 let CoreEnv () =
     let e = new Env();
     e.Put("display", Function(SysDisplay)).
@@ -372,15 +378,11 @@ let rec ParseAst (env : Env) ast =
         | _ -> ParseAst env _true_branch
     // Function application
     | Cons(_fn, _args) ->
-        match _fn with 
-        | Atom(name) -> 
-            // Try to find function in environment
-            match env.Lookup(name) with
-            | Function(native) ->
-                // Evaluate arguments and call native function
-                _args.ConsMap (ParseAst env) |> native
-            | _ -> failwith "Expected a function!"
-        | _ -> failwith "Unexpected head of list in function application!"
+        let _fn = ParseAst env _fn
+        match _fn with
+        | Function(native) ->
+            _args.ConsMap (ParseAst env) |> native
+        | _ -> failwith "Expected a function!"
     // Lookup identifiers
     | Lambda(arguments, body) ->
         // Wrap executon of body in a function
