@@ -263,13 +263,17 @@ let SysEq (args : SObject) =
         match arg1, arg2 with
         | Number(i1), Number(i2) when i1 = i2 -> True
         | _, _ -> NIL
-    | _ -> failwith "Expecting 2 arguments!"
+    | _ -> failwith "Expecting 2 arguments!";;
 
-//let SysApply (args : SObject) =
-//    match args with
-//    | Cons(fun_to_call, arguments) ->
-//        
-//    | _ -> failwith "Expecting at least 1 argument!"
+
+let SysApply (args : SObject) =
+    match args with
+    | Cons(fun_to_call, arguments) ->
+        match fun_to_call with
+        | Function(fn) -> fn(arguments)
+        | _ -> failwith "Expecting a function!"
+    | _ -> failwith "Expecting at least 1 argument!";;
+
 
 let CoreEnv () =
     let e = new Env();
@@ -283,7 +287,8 @@ let CoreEnv () =
       Put("list", Function(SysList)).
       Put("length", Function(SysLength)).
       Put("cons", Function(SysCons)).
-      Put("eq", Function(SysEq));;
+      Put("eq", Function(SysEq)).
+      Put("apply", Function(SysApply));;
 
 
 let rec AppendCons (cons : SObject) (tail : SObject) =
