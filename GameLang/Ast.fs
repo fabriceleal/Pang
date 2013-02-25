@@ -43,6 +43,7 @@ type SObject =
         match this with
         | Cons(something, NIL) -> [ f something ]
         | Cons(something, tail) -> f something :: tail.Map f
+        | NIL -> []
         | _ -> failwith "Only for cons lists!"
 
     member this.Zip (another : SObject) (f : SObject -> SObject -> _) =
@@ -55,12 +56,14 @@ type SObject =
             match another with
             | Cons(a_sth, t_sth) -> Cons(f sth a_sth, sth_tail.Zip t_sth f)
             | _ -> failwith "another is not a cons cell!"
+        | NIL -> NIL
         | _ -> failwith "this is not a cons cell!"
 
     member this.ConsMap (f : SObject -> SObject) =
         match this with
         | Cons(something, NIL) -> Cons(f something, NIL)
         | Cons(something, tail) -> Cons(f something, tail.ConsMap f)
+        | NIL -> NIL
         | _ -> failwith "Only for cons lists!";;
 
 //let rec ConsToString cell = 
@@ -79,7 +82,10 @@ type EnvImpl =
     val inner : Option<EnvImpl>
     val dict : Dictionary<string, SObject>
 
-    new() = { inner = None; dict = new Dictionary<string, SObject>(); }
+    new() = {
+        inner = None;
+        dict = new Dictionary<string, SObject>(); 
+    }
     
     // used by Wrap()
     private new(newInner) = {
@@ -253,7 +259,7 @@ let SysAdd = SysArith "+" 0.0 (+);;
 
 let SysEq (args : SObject) = 
     match args with
-    | Cons(arg1, Cons(arg2, _)) ->
+    | Cons(arg1, Cons(arg2, NIL)) ->
         match arg1, arg2 with
         | Number(i1), Number(i2) when i1 = i2 -> True
         | _, _ -> NIL
