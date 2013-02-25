@@ -27,7 +27,7 @@ Uses fslex and fsyacc.
 
 `car`, `cdr`, `list`, `length`, `cons`
 
-### Comparision
+### Comparison
 
 `eq`
 
