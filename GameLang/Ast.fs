@@ -270,7 +270,10 @@ let SysApply (args : SObject) =
     match args with
     | Cons(fun_to_call, arguments) ->
         match fun_to_call with
-        | Function(fn) -> fn(arguments)
+        | Function(fn) -> 
+            match arguments with
+            | Cons(args, NIL) -> fn(args)
+            | _ -> failwith "Expecting a list with all the args!"
         | _ -> failwith "Expecting a function!"
     | _ -> failwith "Expecting at least 1 argument!";;
 
