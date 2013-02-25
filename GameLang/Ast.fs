@@ -5,6 +5,8 @@ open System.Collections.Generic
 
 // AST Element
 type SObject =
+    | Quasiquote of SObject
+    | Unquote of SObject
     | Cons of SObject * SObject
     | Atom of string
     | Let_Star of SObject * list<SObject>
@@ -350,6 +352,15 @@ let rec PrintSexp = function
 
 let rec ParseAst (env : Env) ast =
     match ast with
+    | Quasiquote(sexpr) ->
+        // Find all unquotes inside sexpr, 
+        // parse them. Any unquote outside a quasiquote is invalid!!!
+        let rec WalkQuasiquote x =
+            match x with
+            | Cons(head, tail) -> Cons(WalkQuasiquote head, WalkQuasiquote tail)
+            | Unquote(sexpr) -> ParseAst env sexpr
+            | x -> x
+        WalkQuasiquote sexpr
     | Set(id, sexpr) ->
         match id with
         | Atom(name) -> 
@@ -430,7 +441,8 @@ let rec ParseAst (env : Env) ast =
                 | _ -> failwith "Invalid argument!") |> ignore
             // Parse body with the new environment
             ParseAst new_env body)
-    | Atom(name) -> env.Lookup(name)
+    | Unquote(_) -> failwith "Unquote is only valid inside a quasiquote!"
+    | Atom(name) -> env.Lookup(name)    
     // Atomic literals evalutate to themselves
     | String(_) | Number(_) | NIL | True -> ast
     | _ -> failwith "Error!";;

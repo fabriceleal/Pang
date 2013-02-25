@@ -23,6 +23,8 @@ let id = letter alphanum*
 let quote_char = '"'
 let notquote_char = [^'"']
 let quote_single = '\''
+let quasiquote = '`'
+let unquote = ','
 
 rule tokenstream = parse
 // --------------------------
@@ -38,6 +40,8 @@ rule tokenstream = parse
 | "quote"				{ Parser.QUOTE_STRING }
 | "set!"				{ Parser.SET }
 | quote_single			{ Parser.QUOTE }
+| quasiquote			{ Parser.QUASIQUOTE }
+| unquote				{ Parser.UNQUOTE }
 | id					{ Parser.IDENTIFIER(LexBuffer.LexemeString lexbuf) }
 | ['-']?digit+								 { Parser.NUMBER(Double.Parse(LexBuffer.LexemeString lexbuf)) }
 | ['-']?digit+('.'digit+)?(['e''E']digit+)?  { Parser.NUMBER(Double.Parse(LexBuffer.LexemeString lexbuf)) }

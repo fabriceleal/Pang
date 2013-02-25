@@ -20,6 +20,8 @@ open Ast
 %token DEFINE
 %token QUOTE
 %token QUOTE_STRING
+%token QUASIQUOTE
+%token UNQUOTE
 %token SET
 
 
@@ -51,6 +53,8 @@ Sexpr:
 	| Lambda						{ $1 }
 	| Quote							{ $1 }
 	| Set							{ $1 }
+	| Quasiquote					{ $1 }
+	| Unquote						{ $1 }
 	| List							{ $1 }
 	| Atom							{ $1 }
 
@@ -106,5 +110,13 @@ Quote:
 	| OPEN_PAREN QUOTE_STRING Sexpr CLOSE_PAREN { Quote($3) }
 	| QUOTE Sexpr { Quote($2) }
 
+Unquote:
+	| UNQUOTE Sexpr							{ Unquote($2) }
+
 Set:
 	| OPEN_PAREN SET Atom Sexpr CLOSE_PAREN			{ Set($3, $4)}
+
+// -----------------------------------------------------------------
+
+Quasiquote:
+	| QUASIQUOTE Sexpr					{ Quasiquote($2) }
