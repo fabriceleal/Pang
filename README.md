@@ -1,6 +1,7 @@
 # Pang
 
-A subset of scheme, implemented in F#
+A subset of scheme, implemented in F#.
+Uses fslex and fsyacc.
 
 ## Supports
 
