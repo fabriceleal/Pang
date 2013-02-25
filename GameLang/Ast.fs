@@ -275,6 +275,22 @@ let SysApply (args : SObject) =
     | _ -> failwith "Expecting at least 1 argument!";;
 
 
+
+let SysMap (args : SObject) = 
+    match args with
+    | Cons(fun_to_call, Cons(list, NIL)) -> 
+        match fun_to_call with
+        // If we want this to adhere to our convention of
+        // every function receiving a cons cell, we need to
+        // treat our list!
+        | Function(fn) ->
+            let treated = list.ConsMap (fun x -> Cons(x, NIL)) 
+            treated.ConsMap fn
+        | _ -> failwith "Expecting a function!"
+    | _ -> failwith "Expecting two arguments!";;
+
+
+// Makes the core environment for our language
 let CoreEnv () =
     let e = new Env();
     e.Put("display", Function(SysDisplay)).
@@ -288,7 +304,8 @@ let CoreEnv () =
       Put("length", Function(SysLength)).
       Put("cons", Function(SysCons)).
       Put("eq", Function(SysEq)).
-      Put("apply", Function(SysApply));;
+      Put("apply", Function(SysApply)).
+      Put("map", Function(SysMap));;
 
 
 let rec AppendCons (cons : SObject) (tail : SObject) =
@@ -296,7 +313,6 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
     | Cons(h, NIL) -> Cons(h, Cons(tail, NIL))
     | Cons(h, t) -> Cons(h, AppendCons t tail)
     | _ -> failwith "Unexpected object in append_cos!";;
-
 
 let rec PrintSexp = function
     | Set(id, sexpr) ->

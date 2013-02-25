@@ -56,10 +56,13 @@ let testString text =
 //                                                (* n (factorial (- n 1))))))
 //                       (display (factorial 5))"
 
-let test = testString "(define x (lambda () (display 1)))
-                        (x)
-                        (display ((lambda (n) (+ n n)) 1))
-                        (display (apply (lambda (a b c) (+ a b c)) 1 2 3))"
+//let test = testString "(define x (lambda () (display 1)))
+//                        (x)
+//                        (display ((lambda (n) (+ n n)) 1))
+//                        (display (apply (lambda (a b c) (+ a b c)) 1 2 3))"
+
+let test = testString "(define x (lambda (n) (+ n 1)))
+                        (display (map x '(1 2 3 4 5)))"
 
 //let test = testString ""
 
