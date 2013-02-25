@@ -8,8 +8,7 @@ open Ast
 // Regular tokens
 %token < string > IDENTIFIER
 %token < string > STRING
-%token < double > FLOAT
-%token < int > INT
+%token < double > NUMBER
 %token OPEN_PAREN
 %token CLOSE_PAREN
 %token ATOM_NIL
@@ -21,6 +20,7 @@ open Ast
 %token DEFINE
 %token QUOTE
 %token QUOTE_STRING
+%token SET
 
 
 // Misc tokens
@@ -50,6 +50,7 @@ Sexpr:
 	| Let							{ $1 }
 	| Lambda						{ $1 }
 	| Quote							{ $1 }
+	| Set							{ $1 }
 	| List							{ $1 }
 	| Atom							{ $1 }
 
@@ -62,8 +63,7 @@ Atom:
 	| TRUE							{ True }
 	| Identifier					{ $1 }
 	| STRING						{ String($1) }
-	| FLOAT							{ Float($1) }
-	| INT							{ Int($1) }
+	| NUMBER						{ Number($1) }
 
 Identifier:
 	| IDENTIFIER					{ Atom($1) }
@@ -105,3 +105,6 @@ Let_Binding:
 Quote:
 	| OPEN_PAREN QUOTE_STRING Sexpr CLOSE_PAREN { Quote($3) }
 	| QUOTE Sexpr { Quote($2) }
+
+Set:
+	| OPEN_PAREN SET Atom Sexpr CLOSE_PAREN			{ Set($3, $4)}

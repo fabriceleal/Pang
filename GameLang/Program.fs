@@ -34,10 +34,27 @@ let testString text =
 //                            (let* ((x 10) (y (+ x 10)) (z (+ y 10))) 
 //                                (+ x y z) ) )"
 
-let test = testString "(display '(hello world))
-                        (display (quote (hello world)))
-                        (display (list 'hello 'world))
-                        (display (cons 'hello (cons 'world nil)))"
+//let test = testString "(display '(hello world))
+//                        (display (quote (hello world)))
+//                        (display (list 'hello 'world))
+//                        (display (cons 'hello (cons 'world nil)))"
+
+//let test = testString "(define x 10)
+//                        (display x)
+//                        (set! x 20)
+//                        (display x)"
+
+//let test = testString "(define x (lambda (n) (+ n 12)))
+//                        (display (x 12))
+//                        (define y (lambda (n) (x n)))
+//                        (set! x (lambda (n) (+ n 1)))
+//                        (display (y 32))"
+
+let test = testString "(define factorial (lambda (n)
+                                            (if (eq n 0)
+                                                1
+                                                (* n (factorial (- n 1))))))
+                       (display (factorial 5))"
 
 //printfn "displaying AST ..."
 //List.map (printfn "%s") (List.map displaySexp test) |> ignore
