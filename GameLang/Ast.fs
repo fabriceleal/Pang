@@ -5,19 +5,22 @@ open System.Collections.Generic
 
 // AST Element
 type SObject =
+    // Constructs
     | Quasiquote of SObject
     | Unquote of SObject
-    | Cons of SObject * SObject
-    | Atom of string
     | Let_Star of SObject * list<SObject>
     | Let of SObject * list<SObject>
-    | Number of float
-    | Lambda of SObject * SObject
-    | Function of (SObject -> SObject)
     | If of SObject * SObject * SObject
     | Define of SObject * SObject
     | Set of SObject * SObject
     | Quote of SObject
+    | Begin of list<SObject>
+    // Native Values
+    | Number of float
+    | Lambda of SObject * SObject
+    | Function of (SObject -> SObject)
+    | Cons of SObject * SObject
+    | Atom of string
     | String of string
     | NIL
     | True
@@ -319,7 +322,14 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
     | Cons(h, t) -> Cons(h, AppendCons t tail)
     | _ -> failwith "Unexpected object in append_cos!";;
 
+
 let rec PrintSexp = function
+    | Begin(ls) ->
+        String.Format("Begin({0})", List.map PrintSexp ls)
+    | Quasiquote(sexpr) ->
+        String.Format("Quasiquote({0})", [PrintSexp sexpr])
+    | Unquote(sexpr) ->
+        String.Format("Unquote({0})", [PrintSexp sexpr])
     | Set(id, sexpr) ->
         match id with
         | Atom(name) -> String.Format("Set!({0}, {1})", name, PrintSexp sexpr)
@@ -352,6 +362,8 @@ let rec PrintSexp = function
 
 let rec ParseAst (env : Env) ast =
     match ast with
+    | Begin(ls) ->
+        List.map (ParseAst env) ls |> List.rev |> List.head
     | Quasiquote(sexpr) ->
         // Find all unquotes inside sexpr, 
         // parse them. Any unquote outside a quasiquote is invalid!!!

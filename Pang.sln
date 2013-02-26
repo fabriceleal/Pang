@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Pang", "GameLang\Pang.fsproj", "{DE7B8983-6CB9-4307-92E1-BD62248E93EF}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PangTests", "PangTests\PangTests.fsproj", "{696571E8-1719-4E18-82DF-3D53476BE6A9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,6 +15,10 @@ Global
 		{DE7B8983-6CB9-4307-92E1-BD62248E93EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE7B8983-6CB9-4307-92E1-BD62248E93EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE7B8983-6CB9-4307-92E1-BD62248E93EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{696571E8-1719-4E18-82DF-3D53476BE6A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{696571E8-1719-4E18-82DF-3D53476BE6A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{696571E8-1719-4E18-82DF-3D53476BE6A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{696571E8-1719-4E18-82DF-3D53476BE6A9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

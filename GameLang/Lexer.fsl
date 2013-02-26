@@ -32,6 +32,7 @@ rule tokenstream = parse
 | close_paren			{ Parser.CLOSE_PAREN }
 | "nil"					{ Parser.ATOM_NIL }
 | "#T"					{ Parser.TRUE }
+| "begin"				{ Parser.BEGIN }
 | "lambda"				{ Parser.LAMBDA }
 | "let*"				{ Parser.LET_STAR }
 | "let"					{ Parser.LET }

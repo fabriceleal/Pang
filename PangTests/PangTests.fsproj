@@ -41,7 +41,7 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="UnitTest1.fs" />
+    <Compile Include="ParsingTests.fs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\GameLang\Pang.fsproj">

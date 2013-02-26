@@ -103,4 +103,13 @@ type Test_UnitTest1() =
                             (let ((x 10))
                                 (display (/ x 2))
                                 x) )" |> ignore
+
+    [<TestMethod>]
+    member this.``Begin test`` () =
+        Main.ParseString "(begin
+                                (define x 10)
+                                (display x)
+                                (define y 20)
+                                (display y)
+                                (+ x y))" |> ignore
 ;;

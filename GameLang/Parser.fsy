@@ -12,6 +12,7 @@ open Ast
 %token OPEN_PAREN
 %token CLOSE_PAREN
 %token ATOM_NIL
+%token BEGIN
 %token TRUE
 %token LAMBDA
 %token LET
@@ -46,6 +47,7 @@ Sexpr_Plus:
 	| Sexpr_Plus Sexpr				{ List.append $1 [ $2 ] }
 
 Sexpr:
+	| Begin							{ $1 }
 	| Define						{ $1 }
 	| If							{ $1 }
 	| Let_Star						{ $1 }
@@ -115,6 +117,9 @@ Unquote:
 
 Set:
 	| OPEN_PAREN SET Atom Sexpr CLOSE_PAREN			{ Set($3, $4)}
+
+Begin:
+	| OPEN_PAREN BEGIN Sexpr_Plus CLOSE_PAREN		{ Begin($3) }
 
 // -----------------------------------------------------------------
 
