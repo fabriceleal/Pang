@@ -16,7 +16,7 @@ type SObject =
     | Set of SObject * SObject
     | Quote of SObject    
     | Begin of list<SObject>
-    | Rest of SObject
+    | Rest of string
     | DefineMacro of SObject * SObject
     // This might sound like a native, but will actually
     // be translated to a Function(...)
@@ -58,17 +58,45 @@ type SObject =
         | NIL -> []
         | _ -> failwith "Only for cons lists!"
 
+//    member this.ConsZip (another : SObject) (f : SObject -> SObject -> _) =
+//        match this with
+//        | Cons(sth, NIL) -> 
+//            match another with
+//            | Cons(a_sth, _) -> Cons(f sth a_sth, NIL)
+//            | _ -> failwith "another is not a cons cell!"
+//        | Cons(sth, sth_tail) ->
+//            match another with
+//            | Cons(a_sth, t_sth) -> Cons(f sth a_sth, sth_tail.ConsZip t_sth f)
+//            | _ -> failwith "another is not a cons cell!"
+//        | NIL -> NIL
+//        | _ -> failwith "this is not a cons cell!"
+
     member this.Zip (another : SObject) (f : SObject -> SObject -> _) =
         match this with
         | Cons(sth, NIL) -> 
             match another with
-            | Cons(a_sth, _) -> Cons(f sth a_sth, NIL)
+            | Cons(a_sth, _) -> [f sth a_sth]
             | _ -> failwith "another is not a cons cell!"
         | Cons(sth, sth_tail) ->
             match another with
-            | Cons(a_sth, t_sth) -> Cons(f sth a_sth, sth_tail.Zip t_sth f)
+            | Cons(a_sth, t_sth) -> f sth a_sth :: sth_tail.Zip t_sth f
             | _ -> failwith "another is not a cons cell!"
-        | NIL -> NIL
+        | NIL -> []
+        | _ -> failwith "this is not a cons cell!"
+
+    member this.ZipDiscard (another : SObject) (f : SObject -> SObject -> _) =
+        match this with
+        | Cons(sth, NIL) -> 
+            match another with
+            | Cons(a_sth, _) -> f sth a_sth |> ignore
+            | _ -> failwith "another is not a cons cell!"
+        | Cons(sth, sth_tail) ->
+            match another with
+            | Cons(a_sth, t_sth) -> 
+                f sth a_sth |> ignore
+                sth_tail.ZipDiscard t_sth f |> ignore
+            | _ -> failwith "another is not a cons cell!"
+        | NIL -> ignore()
         | _ -> failwith "this is not a cons cell!"
 
     member this.ConsMap (f : SObject -> SObject) =
@@ -342,9 +370,13 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
     | _ -> failwith "Unexpected object in append_cos!";;
 
 
-let rec PrintSexp = function    
+let rec PrintSexp = function  
+    // Im too lazy ...
+    | Syntax(_) -> "Syntax ..."
     | DefineMacro(_, _) -> "Define-Macro ..."
     | Rest(_) -> "Rest ..."
+    | UnquoteSplicing(_) -> "Unquote-splicing ..."
+    // OK
     | Begin(ls) ->
         String.Format("Begin({0})", List.map PrintSexp ls)
     | Quasiquote(sexpr) ->
@@ -396,17 +428,27 @@ let rec ParseAst (env : Env) ast =
                 parse
             | _ -> failwith "Name should be an atom!"
         | _ -> failwith "Expected name of the macro!"
-    | Begin(ls) ->
-        List.map (ParseAst env) ls |> List.rev |> List.head
     | Quasiquote(sexpr) ->
         // Find all unquotes inside sexpr, 
         // parse them. Any unquote outside a quasiquote is invalid!!!
         let rec WalkQuasiquote x =
             match x with
-            | Cons(head, tail) -> Cons(WalkQuasiquote head, WalkQuasiquote tail)
+            | UnquoteSplicing(sexpr) -> ParseAst env sexpr
             | Unquote(sexpr) -> ParseAst env sexpr
+            // Constructs
+            | Cons(a, b) -> Cons(WalkQuasiquote a, WalkQuasiquote b)
+            | If(a, b, c) -> If(WalkQuasiquote a, WalkQuasiquote b, WalkQuasiquote c)
+            | Begin(ls) -> Begin(List.map WalkQuasiquote ls)
+            | Set(a, b) -> Set(WalkQuasiquote a, WalkQuasiquote b)
+            // let*
+            // let
+            // define
+            // lambda
+            // Return everything else as-is
             | x -> x
         WalkQuasiquote sexpr
+    | Begin(ls) ->
+        List.map (ParseAst env) ls |> List.rev |> List.head
     | Set(id, sexpr) ->
         match id with
         | Atom(name) -> 
@@ -468,7 +510,26 @@ let rec ParseAst (env : Env) ast =
             // bind *unparsed* arguments
             let new_env = env.Copy().Wrap()
             
-            ParseAst new_env body            
+            // Match arguments DO NOT EVAL THEM!
+            let matchArgs = args.Zip _args
+            let rec f = (fun sym_arg arg_value -> 
+                match sym_arg with
+                | Cons(s, NIL) -> 
+                    match s with
+                    | Atom(a) ->
+                        new_env.Put(a, arg_value)
+                    | Rest(a) -> 
+                        new_env.Put(a, arg_value)
+                    | _ -> failwith "not what was expected!"
+                | _ -> failwith "not what was expected!")
+            
+            let x = matchArgs f
+
+            // Create the tree
+            let parsed = ParseAst new_env body
+
+            // And parse it!
+            ParseAst env parsed
         | _ -> failwith "Expected a function!"
     // Lookup identifiers
     | Lambda(arguments, body) ->
@@ -486,16 +547,16 @@ let rec ParseAst (env : Env) ast =
             // to avoid the need to UnWrap() and
             // to allow reentrant functions
             let new_env = env_for_fun.Copy().Wrap()
-            arguments.Zip x (fun name sexpr -> 
+            arguments.ZipDiscard x (fun name sexpr -> 
                 match name with
                 | Atom(name) -> new_env.Put(name, sexpr) |> ignore
                                 sexpr
-                | _ -> failwith "Invalid argument!") |> ignore
+                | _ -> failwith "Invalid argument!")
             // Parse body with the new environment
             ParseAst new_env body)
     | Unquote(_) -> failwith "Unquote is only valid inside a quasiquote!"
     | Atom(name) -> env.Lookup(name)    
     // Atomic literals evalutate to themselves
-    | String(_) | Number(_) | NIL | True -> ast
+    | String(_) | Number(_) | NIL | True | False -> ast
     | _ -> failwith "Error!";;
     

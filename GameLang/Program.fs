@@ -9,16 +9,12 @@ open Microsoft.FSharp.Text.Lexing
 let ParseString text =
     Parser.start Lexer.tokenstream (LexBuffer<char>.FromString text)
 
-let test = ParseString "(define-macro (or . args)
-                           (if (null? args) ; zero arg or?
-                                #f
-                                (if (null? (cdr? arg-exprs)) ; one arg or?
-                                   (car arg-exprs)          
-                                   `(let ((temp ,(car arg-exprs)))
-                                       (if temp
-                                           temp
-                                           (or ,@(cdr arg-exprs)))))))  "
+let test = ParseString "(define-macro (unless condition . body)
+                           `(if ,condition
+                                nil
+                                (begin ,@body)))
 
+                        (unless #f (display '(hello world)))"
 
 //(if (null? (cdr? arg-exprs)) ; one arg or?
 //                                   (car arg-exprs)          

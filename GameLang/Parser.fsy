@@ -88,9 +88,12 @@ Id_Consed:
 	| Identifier					{ Cons($1, NIL) }
 	| Id_Consed Identifier			{ AppendCons ($1) (Cons($2, NIL)) }
 
+Rest:
+	| IDENTIFIER					{ $1 }
+
 Id_Consed_With_Rest:
 	| Id_Consed						{ $1 }
-	| Id_Consed DOT Identifier		{ AppendCons ($1) (Cons(Rest($3), NIL)) }
+	| Id_Consed DOT Rest			{ AppendCons ($1) (Cons(Rest($3), NIL)) }
 
 List_of_Identifiers:
 	| OPEN_PAREN CLOSE_PAREN				{ NIL }
