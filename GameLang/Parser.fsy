@@ -12,8 +12,11 @@ open Ast
 %token OPEN_PAREN
 %token CLOSE_PAREN
 %token ATOM_NIL
+%token DEFINE_MACRO
+%token DOT
 %token BEGIN
 %token TRUE
+%token FALSE
 %token LAMBDA
 %token LET
 %token LET_STAR
@@ -23,6 +26,7 @@ open Ast
 %token QUOTE_STRING
 %token QUASIQUOTE
 %token UNQUOTE
+%token UNQUOTE_SPLICING
 %token SET
 
 
@@ -47,6 +51,7 @@ Sexpr_Plus:
 	| Sexpr_Plus Sexpr				{ List.append $1 [ $2 ] }
 
 Sexpr:
+	| Macro							{ $1 }
 	| Begin							{ $1 }
 	| Define						{ $1 }
 	| If							{ $1 }
@@ -67,6 +72,7 @@ List:
 Atom:
 	| ATOM_NIL						{ NIL }
 	| TRUE							{ True }
+	| FALSE							{ False }
 	| Identifier					{ $1 }
 	| STRING						{ String($1) }
 	| NUMBER						{ Number($1) }
@@ -77,6 +83,14 @@ Identifier:
 Sexpr_Consed:
 	| Sexpr							{ Cons($1, NIL) }
 	| Sexpr_Consed Sexpr			{ AppendCons $1 $2 }
+
+Id_Consed:
+	| Identifier					{ Cons($1, NIL) }
+	| Id_Consed Identifier			{ AppendCons ($1) (Cons($2, NIL)) }
+
+Id_Consed_With_Rest:
+	| Id_Consed						{ $1 }
+	| Id_Consed DOT Identifier		{ AppendCons ($1) (Cons(Rest($3), NIL)) }
 
 List_of_Identifiers:
 	| OPEN_PAREN CLOSE_PAREN				{ NIL }
@@ -114,6 +128,7 @@ Quote:
 
 Unquote:
 	| UNQUOTE Sexpr							{ Unquote($2) }
+	| UNQUOTE_SPLICING Sexpr				{ UnquoteSplicing($2) }
 
 Set:
 	| OPEN_PAREN SET Atom Sexpr CLOSE_PAREN			{ Set($3, $4)}
@@ -125,3 +140,8 @@ Begin:
 
 Quasiquote:
 	| QUASIQUOTE Sexpr					{ Quasiquote($2) }
+
+// -----------------------------------------------------------------
+
+Macro:
+	| OPEN_PAREN DEFINE_MACRO OPEN_PAREN Id_Consed_With_Rest CLOSE_PAREN Sexpr CLOSE_PAREN { DefineMacro($4, $6) }

@@ -5,25 +5,32 @@ open System.Collections.Generic
 
 // AST Element
 type SObject =
-    // Constructs
+    // Language Constructs
     | Quasiquote of SObject
     | Unquote of SObject
+    | UnquoteSplicing of SObject
     | Let_Star of SObject * list<SObject>
     | Let of SObject * list<SObject>
     | If of SObject * SObject * SObject
     | Define of SObject * SObject
     | Set of SObject * SObject
-    | Quote of SObject
+    | Quote of SObject    
     | Begin of list<SObject>
-    // Native Values
-    | Number of float
+    | Rest of SObject
+    | DefineMacro of SObject * SObject
+    // This might sound like a native, but will actually
+    // be translated to a Function(...)
     | Lambda of SObject * SObject
+    // Native Values
+    | Syntax of SObject * SObject
+    | Number of float    
     | Function of (SObject -> SObject)
     | Cons of SObject * SObject
     | Atom of string
     | String of string
     | NIL
     | True
+    | False
     override this.ToString() =
         match this with
         // This is a list
@@ -193,48 +200,48 @@ let SysCons (args: SObject) : SObject =
     match args with
     | Cons(car, Cons(cdr, NIL)) ->
         Cons(car, cdr)
-    | _ -> failwith "WTF?";;
+    | _ -> failwith "cons expects two arguments!";;
 
 
 let rec SysLength (args: SObject) : SObject =
     match args with
-    | Cons(to_length, _) ->
+    | Cons(to_length, NIL) ->
         match to_length with
         | NIL -> Number(0.0)
         | Cons(_, tail) ->
             // We need to wrap the argument in another cons
             match SysLength(Cons(tail, NIL)) with
             | Number(i) -> Number(1.0 + i)
-            | _ -> failwith "Oh boy, WTF?!?!?!"
-        | _ -> failwith "Really, WTF???"
-    | _ -> failwith "WTF?";;
+            | _ -> failwith "length should return number!"
+        | _ -> failwith "length expects a cons cell or nil!"
+    | _ -> failwith "length expects one argument!";;
 
 
 let SysCar (args: SObject) : SObject =
     match args with
-    | Cons(to_car, _) ->
+    | Cons(to_car, NIL) ->
         match to_car with
         | Cons(car, _) -> car
-        | _ -> failwith "Really, WTF???"
-    | _ -> failwith "WTF?";;
+        | _ -> failwith "car expects a cons cell!"
+    | _ -> failwith "car expects one argument!";;
 
 
 let SysCdr (args: SObject) : SObject =
     match args with
-    | Cons(to_car, _) ->
-        match to_car with
+    | Cons(to_cdr, NIL) ->
+        match to_cdr with
         | Cons(_, cdr) -> cdr
-        | _ -> failwith "Really, WTF???"
-    | _ -> failwith "WTF?";;
+        | _ -> failwith "cdr expects a cons cell!"
+    | _ -> failwith "cdr expects one argument!";;
 
 
 let SysDisplay (args : SObject) : SObject = 
     match args with
-    | Cons(to_display, _) ->
+    | Cons(to_display, NIL) ->
         let displayed = to_display.ToString()
         Console.WriteLine displayed |> ignore
         String(displayed)
-    | _ -> failwith "WTF?";;
+    | _ -> failwith "display expects one argument!";;
 
 
 // This does not evaluate exactly 
@@ -267,6 +274,9 @@ let SysEq (args : SObject) =
     | Cons(arg1, Cons(arg2, NIL)) ->
         match arg1, arg2 with
         | Number(i1), Number(i2) when i1 = i2 -> True
+        | String(s1), String(s2) when s1 = s2 -> True
+        | Atom(a1), Atom(a2) when a1 = a2 -> True
+        // TODO put here more stuff!
         | _, _ -> NIL
     | _ -> failwith "Expecting 2 arguments!";;
 
@@ -280,9 +290,8 @@ let SysApply (args : SObject) =
             | Cons(args, NIL) -> fn(args)
             | _ -> failwith "Expecting a list with all the args!"
         | _ -> failwith "Expecting a function!"
-    | _ -> failwith "Expecting at least 1 argument!";;
-
-
+    | _ -> failwith "apply expects 2 arguments!";;
+    
 
 let SysMap (args : SObject) = 
     match args with
@@ -295,7 +304,16 @@ let SysMap (args : SObject) =
             let treated = list.ConsMap (fun x -> Cons(x, NIL)) 
             treated.ConsMap fn
         | _ -> failwith "Expecting a function!"
-    | _ -> failwith "Expecting two arguments!";;
+    | _ -> failwith "Expecting 2 arguments!";;
+
+
+let ``SysNull?`` (args : SObject) =
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | NIL -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
 
 
 // Makes the core environment for our language
@@ -313,7 +331,8 @@ let CoreEnv () =
       Put("cons", Function(SysCons)).
       Put("eq", Function(SysEq)).
       Put("apply", Function(SysApply)).
-      Put("map", Function(SysMap));;
+      Put("map", Function(SysMap)).
+      Put("null?", Function(``SysNull?``));;
 
 
 let rec AppendCons (cons : SObject) (tail : SObject) =
@@ -323,7 +342,9 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
     | _ -> failwith "Unexpected object in append_cos!";;
 
 
-let rec PrintSexp = function
+let rec PrintSexp = function    
+    | DefineMacro(_, _) -> "Define-Macro ..."
+    | Rest(_) -> "Rest ..."
     | Begin(ls) ->
         String.Format("Begin({0})", List.map PrintSexp ls)
     | Quasiquote(sexpr) ->
@@ -357,11 +378,24 @@ let rec PrintSexp = function
         String.Format("Lambda({0}, {1})", PrintSexp args, PrintSexp body)
     | Function(_) -> "Native Function"
     | True -> "#True"
+    | False -> "#False"
     | NIL -> "NIL";; 
 
 
 let rec ParseAst (env : Env) ast =
     match ast with
+    | DefineMacro(macro_args, body) ->
+        match macro_args with
+        | Cons(id, args) -> 
+            match id with
+            | Atom(name) -> 
+                // Create a Syntax object
+                let parse = Syntax(args, body)
+                // Bind that to the name
+                env.Put(name, parse) |> ignore
+                parse
+            | _ -> failwith "Name should be an atom!"
+        | _ -> failwith "Expected name of the macro!"
     | Begin(ls) ->
         List.map (ParseAst env) ls |> List.rev |> List.head
     | Quasiquote(sexpr) ->
@@ -421,7 +455,7 @@ let rec ParseAst (env : Env) ast =
     // if
     | If(_condition, _true_branch, _false_branch) ->
         match ParseAst env _condition with
-        | NIL -> ParseAst env _false_branch
+        | False -> ParseAst env _false_branch
         | _ -> ParseAst env _true_branch
     // Function application
     | Cons(_fn, _args) ->
@@ -429,6 +463,12 @@ let rec ParseAst (env : Env) ast =
         match _fn with
         | Function(native) ->
             _args.ConsMap (ParseAst env) |> native
+        | Syntax(args, body) ->
+            // Create new env., 
+            // bind *unparsed* arguments
+            let new_env = env.Copy().Wrap()
+            
+            ParseAst new_env body            
         | _ -> failwith "Expected a function!"
     // Lookup identifiers
     | Lambda(arguments, body) ->
