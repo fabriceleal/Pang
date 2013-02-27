@@ -130,14 +130,14 @@ Quote:
 	| QUOTE Sexpr { Quote($2) }
 
 Unquote:
-	| UNQUOTE Sexpr							{ Unquote($2) }
 	| UNQUOTE_SPLICING Sexpr				{ UnquoteSplicing($2) }
+	| UNQUOTE Sexpr							{ Unquote($2) }
 
 Set:
 	| OPEN_PAREN SET Atom Sexpr CLOSE_PAREN			{ Set($3, $4)}
 
 Begin:
-	| OPEN_PAREN BEGIN Sexpr_Plus CLOSE_PAREN		{ Begin($3) }
+	| OPEN_PAREN BEGIN Sexpr_Consed CLOSE_PAREN		{ Begin($3) }
 
 // -----------------------------------------------------------------
 

@@ -15,7 +15,7 @@ type SObject =
     | Define of SObject * SObject
     | Set of SObject * SObject
     | Quote of SObject    
-    | Begin of list<SObject>
+    | Begin of SObject
     | Rest of string
     | DefineMacro of SObject * SObject
     // This might sound like a native, but will actually
@@ -217,6 +217,11 @@ type Env =
         this.e.Change(key, new_val) |> ignore
         this;;
 
+let rec Last = 
+    function
+    | Cons(x, NIL) -> x
+    | Cons(_, t) -> Last t
+    | a -> failwith "Expected a cons cell!"
 
 // 
 // We already receive the arguments as a cons list,
@@ -367,20 +372,27 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
     match cons with
     | Cons(h, NIL) -> Cons(h, Cons(tail, NIL))
     | Cons(h, t) -> Cons(h, AppendCons t tail)
-    | _ -> failwith "Unexpected object in append_cos!";;
+    | _ -> failwith "Unexpected object in AppendCons!";;
+
+
+let rec AppendForSplice (cons : SObject) (tail : SObject) =
+    match cons with
+    | Cons(h, NIL) -> Cons(h, tail)
+    | Cons(h, t) -> Cons(h, AppendForSplice t tail)
+    | _ -> failwith "Unexpected object in AppendForSplice!"
 
 
 let rec PrintSexp = function  
     // Im too lazy ...
-    | Syntax(_) -> "Syntax ..."
-    | DefineMacro(_, _) -> "Define-Macro ..."
-    | Rest(_) -> "Rest ..."
-    | UnquoteSplicing(_) -> "Unquote-splicing ..."
+    | Syntax(_) -> "Syntax *"
+    | DefineMacro(_, _) -> "Define-Macro *"
+    | Rest(_) -> "Rest *"
+    | UnquoteSplicing(_) -> "Unquote-splicing *"
     // OK
     | Begin(ls) ->
-        String.Format("Begin({0})", List.map PrintSexp ls)
+        String.Format("Begin({0})", PrintSexp ls)
     | Quasiquote(sexpr) ->
-        String.Format("Quasiquote({0})", [PrintSexp sexpr])
+        String.Format("Quasiquote({0})", PrintSexp sexpr)
     | Unquote(sexpr) ->
         String.Format("Unquote({0})", [PrintSexp sexpr])
     | Set(id, sexpr) ->
@@ -414,6 +426,20 @@ let rec PrintSexp = function
     | NIL -> "NIL";; 
 
 
+let PrintTree tree = 
+    let newline = Environment.NewLine
+    let rec __PrintTree indent tree = 
+        match tree with
+        | Cons(a, b) ->
+            String.Format("{0}Cons{1}", System.String('.', indent), newline) +
+            String.Format("{0}{1}", System.String('.', indent), __PrintTree (indent + 1) a) +
+            String.Format("{0}{1}", System.String('.', indent), __PrintTree (indent + 1) b)
+        | t -> 
+            String.Format("{0}{1}{2}", System.String('.', indent), PrintSexp t, newline)
+    //--
+    __PrintTree 0 tree
+
+
 let rec ParseAst (env : Env) ast =
     match ast with
     | DefineMacro(macro_args, body) ->
@@ -433,13 +459,30 @@ let rec ParseAst (env : Env) ast =
         // parse them. Any unquote outside a quasiquote is invalid!!!
         let rec WalkQuasiquote x =
             match x with
-            | UnquoteSplicing(sexpr) -> ParseAst env sexpr
-            | Unquote(sexpr) -> ParseAst env sexpr
+            // Here looks the same, but the container (hopefully, a cons(_, _))
+            // must be carefull!
+            | UnquoteSplicing(sexpr) | Unquote(sexpr) -> ParseAst env sexpr
             // Constructs
-            | Cons(a, b) -> Cons(WalkQuasiquote a, WalkQuasiquote b)
+            | Cons(a, b) -> 
+                //Cons(WalkQuasiquote a, WalkQuasiquote b)
+                // We need to *know* that the 
+                // result of a UnquoteSplicing is a consed list
+                match a, b with
+                | UnquoteSplicing(_), UnquoteSplicing(_) ->
+                    failwith "Implement (a, b) match (UnquoteSplicing(_), UnquoteSplicing(_))"
+                | UnquoteSplicing(_), _ -> 
+                    let head_list = WalkQuasiquote(a) 
+                    match head_list with
+                    | Cons(_, _) -> AppendForSplice head_list (WalkQuasiquote b)
+                    |_ -> failwith "Result of UnquoteSplicing should be a list!"
+                | _, UnquoteSplicing(_) -> 
+                    failwith "Implement (_, b) match (_, UnquoteSplicing(_))"
+                | _, _ -> 
+                    // do regular stuff ...
+                    Cons(WalkQuasiquote a, WalkQuasiquote b)
             | If(a, b, c) -> If(WalkQuasiquote a, WalkQuasiquote b, WalkQuasiquote c)
-            | Begin(ls) -> Begin(List.map WalkQuasiquote ls)
-            | Set(a, b) -> Set(WalkQuasiquote a, WalkQuasiquote b)
+            | Begin(ls) -> Begin(WalkQuasiquote ls)
+            // set!
             // let*
             // let
             // define
@@ -448,7 +491,9 @@ let rec ParseAst (env : Env) ast =
             | x -> x
         WalkQuasiquote sexpr
     | Begin(ls) ->
-        List.map (ParseAst env) ls |> List.rev |> List.head
+        "Args to begin" |> Console.WriteLine
+        PrintTree ls |> Console.WriteLine
+        ls.ConsMap (ParseAst env) |> Last
     | Set(id, sexpr) ->
         match id with
         | Atom(name) -> 
@@ -510,20 +555,42 @@ let rec ParseAst (env : Env) ast =
             // bind *unparsed* arguments
             let new_env = env.Copy().Wrap()
             
+            "Pars to macro" |> Console.WriteLine
+            PrintTree args |> Console.WriteLine
+            "Args to macro" |> Console.WriteLine
+            PrintTree _args |> Console.WriteLine
+
             // Match arguments DO NOT EVAL THEM!
-            let matchArgs = args.Zip _args
-            let rec f = (fun sym_arg arg_value -> 
-                match sym_arg with
-                | Cons(s, NIL) -> 
-                    match s with
-                    | Atom(a) ->
-                        new_env.Put(a, arg_value)
-                    | Rest(a) -> 
-                        new_env.Put(a, arg_value)
-                    | _ -> failwith "not what was expected!"
-                | _ -> failwith "not what was expected!")
+//            let matchArgs = args.Zip _args
+//            let rec f = (fun sym_arg arg_value -> 
+//                match sym_arg with
+//                | Cons(s, NIL) -> 
+//                    match s with
+//                    | Atom(a) ->
+//                        new_env.Put(a, arg_value)
+//                    | Rest(a) -> 
+//                        new_env.Put(a, arg_value)
+//                    | _ -> failwith "not what was expected!"
+//                | _ -> failwith "not what was expected!")
             
-            let x = matchArgs f
+            let rec parseMacroArgs args pars =
+                match args with
+                | Cons(s, t) ->
+                    match pars with
+                    | Cons(p1, p2) ->
+                        match s with
+                        | Cons(Atom(a), NIL) ->
+                            new_env.Put(a, p1) |> ignore
+                            parseMacroArgs t p2
+                        | Cons(Rest(r), NIL) -> 
+                            new_env.Put(r, pars) |> ignore
+                        | _ -> failwith "not what was expected!"                       
+                    | _ -> failwith "not what was expected!"                     
+                | _ -> failwith "not what was expected!"
+
+            //let x = matchArgs f
+
+            parseMacroArgs args _args
 
             // Create the tree
             let parsed = ParseAst new_env body

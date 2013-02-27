@@ -14,7 +14,16 @@ let test = ParseString "(define-macro (unless condition . body)
                                 nil
                                 (begin ,@body)))
 
-                        (unless #f (display '(hello world)))"
+                        (begin (display 'hello) (display 'world))
+                        (unless #f (display 'hello) (display 'world))"
+
+// 
+
+//let test = ParseString "(display `(,@(list 1 2 3) 4 5 6))
+//                        (display `(1 2 3 ,@(list 4 5 6)))
+//                        (display `(1 2 ,@(list 3 4) 5 6))"
+
+//let test = ParseString "(begin (display 'hello) (display 'world))"
 
 //(if (null? (cdr? arg-exprs)) ; one arg or?
 //                                   (car arg-exprs)          
