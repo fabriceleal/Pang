@@ -6,16 +6,31 @@ open System
 open System.IO
 open Microsoft.FSharp.Text.Lexing
 
-let ParseString text =
-    Parser.start Lexer.tokenstream (LexBuffer<char>.FromString text)
+//let ParseString text =
+//    Parser.start Lexer.tokenstream (LexBuffer<char>.FromString text)
 
-let test = ParseString "(define-macro (unless condition . body)
-                           `(if ,condition
-                                nil
-                                (begin ,@body)))
+type Pang = 
+    val baseEnv : Env
+    new (input : TextReader, output : TextWriter) = { baseEnv = CoreEnv input output; }
 
-                        (begin (display 'hello) (display 'world))
-                        (unless #f (display 'hello) (display 'world))"
+    member this.ParseString (text : string) =
+        // Read file
+        let tree = Parser.start Lexer.tokenstream (LexBuffer<char>.FromString text)
+        // Parse AST
+        let results = List.map (ParseAst this.baseEnv) tree
+        // Only return the result of the last expression
+        List.rev results |> List.head
+;;
+
+
+//
+//let test = ParseString "(define-macro (unless condition . body)
+//                           `(if ,condition
+//                                nil
+//                                (begin ,@body)))
+//
+//                        (begin (display '(hello world)) (display 'the-end))
+//                        (unless #f (display '(hello world)) (display 'the-end))"
 
 // 
 
@@ -51,7 +66,10 @@ let test = ParseString "(define-macro (unless condition . body)
 //List.map (printfn "%s") (List.map displaySexp test) |> ignore
 
 printfn "Executing code ..."
-List.map (ParseAst (CoreEnv())) test |> ignore
+//List.map (ParseAst (CoreEnv null null)) test |> ignore
+
+let pang = new Pang(null, null)
+pang.ParseString "(display '(hello world))" |> ignore
 
 
 printfn "Press any key to continue..."

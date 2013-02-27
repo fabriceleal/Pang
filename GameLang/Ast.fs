@@ -1,6 +1,7 @@
 ﻿module Ast
 
 open System
+open System.IO
 open System.Collections.Generic
 
 // AST Element
@@ -268,13 +269,31 @@ let SysCdr (args: SObject) : SObject =
     | _ -> failwith "cdr expects one argument!";;
 
 
-let SysDisplay (args : SObject) : SObject = 
-    match args with
-    | Cons(to_display, NIL) ->
-        let displayed = to_display.ToString()
-        Console.WriteLine displayed |> ignore
-        String(displayed)
-    | _ -> failwith "display expects one argument!";;
+// The Console.Out property is changed only once this
+// is called. You can overide it as you want
+let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> SObject = 
+    // Change default out 
+    match newTextWriter with
+    | null -> ignore()
+    | _ -> Console.SetOut(newTextWriter)
+
+    let __SysDisplay (args : SObject) =
+        match args with
+        | Cons(to_display, NIL) ->
+            let displayed = to_display.ToString()            
+            Console.WriteLine displayed |> ignore
+            String(displayed)
+        | _ -> failwith "display expects one argument!"
+    __SysDisplay;;
+
+
+//let SysDisplay (args : SObject) : SObject = 
+//    match args with
+//    | Cons(to_display, NIL) ->
+//        let displayed = to_display.ToString()
+//        Console.WriteLine displayed |> ignore
+//        String(displayed)
+//    | _ -> failwith "display expects one argument!";;
 
 
 // This does not evaluate exactly 
@@ -310,7 +329,7 @@ let SysEq (args : SObject) =
         | String(s1), String(s2) when s1 = s2 -> True
         | Atom(a1), Atom(a2) when a1 = a2 -> True
         // TODO put here more stuff!
-        | _, _ -> NIL
+        | _, _ -> False
     | _ -> failwith "Expecting 2 arguments!";;
 
 
@@ -350,9 +369,9 @@ let ``SysNull?`` (args : SObject) =
 
 
 // Makes the core environment for our language
-let CoreEnv () =
+let CoreEnv newIn newOut =
     let e = new Env();
-    e.Put("display", Function(SysDisplay)).
+    e.Put("display", Function(MakeSysDisplay newOut)).
       Put("+", Function(SysAdd)).
       Put("*", Function(SysMult)).
       Put("-", Function(SysSub)).
@@ -379,7 +398,7 @@ let rec AppendForSplice (cons : SObject) (tail : SObject) =
     match cons with
     | Cons(h, NIL) -> Cons(h, tail)
     | Cons(h, t) -> Cons(h, AppendForSplice t tail)
-    | _ -> failwith "Unexpected object in AppendForSplice!"
+    | _ -> failwith "Unexpected object in AppendForSplice!";;
 
 
 let rec PrintSexp = function  
@@ -437,7 +456,7 @@ let PrintTree tree =
         | t -> 
             String.Format("{0}{1}{2}", System.String('.', indent), PrintSexp t, newline)
     //--
-    __PrintTree 0 tree
+    __PrintTree 0 tree;;
 
 
 let rec ParseAst (env : Env) ast =
@@ -491,8 +510,8 @@ let rec ParseAst (env : Env) ast =
             | x -> x
         WalkQuasiquote sexpr
     | Begin(ls) ->
-        "Args to begin" |> Console.WriteLine
-        PrintTree ls |> Console.WriteLine
+        //"Args to begin" |> Console.WriteLine
+        //PrintTree ls |> Console.WriteLine
         ls.ConsMap (ParseAst env) |> Last
     | Set(id, sexpr) ->
         match id with
@@ -554,24 +573,6 @@ let rec ParseAst (env : Env) ast =
             // Create new env., 
             // bind *unparsed* arguments
             let new_env = env.Copy().Wrap()
-            
-            "Pars to macro" |> Console.WriteLine
-            PrintTree args |> Console.WriteLine
-            "Args to macro" |> Console.WriteLine
-            PrintTree _args |> Console.WriteLine
-
-            // Match arguments DO NOT EVAL THEM!
-//            let matchArgs = args.Zip _args
-//            let rec f = (fun sym_arg arg_value -> 
-//                match sym_arg with
-//                | Cons(s, NIL) -> 
-//                    match s with
-//                    | Atom(a) ->
-//                        new_env.Put(a, arg_value)
-//                    | Rest(a) -> 
-//                        new_env.Put(a, arg_value)
-//                    | _ -> failwith "not what was expected!"
-//                | _ -> failwith "not what was expected!")
             
             let rec parseMacroArgs args pars =
                 match args with
