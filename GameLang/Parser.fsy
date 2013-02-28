@@ -89,7 +89,7 @@ Atom_Consed:
 	| Atom_Consed Atom				{ AppendCons $1 $2 }
 
 Lambda:
-	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Lambda($3, $4) }
+	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Lambda(Cons($3, Cons($4, NIL))) }
 
 If:
 	| OPEN_PAREN IF ThreeSexpr CLOSE_PAREN	{ If($3) }

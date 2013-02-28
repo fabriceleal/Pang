@@ -21,7 +21,7 @@ type SObject =
     | DefineMacro of SObject * SObject
     // This might sound like a native, but will actually
     // be translated to a Function(...)
-    | Lambda of SObject * SObject
+    | Lambda of SObject
     // Native Values
     | Syntax of SObject * SObject
     | Number of float    
@@ -45,7 +45,10 @@ type SObject =
         // Scalar types
         | Atom(s) -> s
         | Number(i) -> i.ToString()
-        | Lambda(args, body) -> String.Format("<lambda {0} {1}>", args, body)
+        | Lambda(ls) ->             
+            match ls with
+            | Cons(args, Cons(body, NIL)) -> String.Format("<lambda {0} {1}>", args, body)
+            | _ -> failwith "Invalid arguments to lambda!"
         | Function(_) -> "<system function>"
         | String(s) -> String.Format("\"{0}\"", s)
         | NIL -> "NIL"
@@ -401,6 +404,7 @@ let rec AppendForSplice (cons : SObject) (tail : SObject) =
     | _ -> failwith "Unexpected object in AppendForSplice!";;
 
 
+// Let this fail if arguments are invalid
 let rec PrintSexp = function  
     // Im too lazy ...
     | Syntax(_) -> "Syntax *"
@@ -435,7 +439,7 @@ let rec PrintSexp = function
     | Atom(name) -> String.Format("Atom({0})", name)                 
     | Number(n) -> String.Format("Number({0})", n)
     | String(s) -> String.Format("String({0})", s)
-    | Lambda(args, body) -> 
+    | Lambda(Cons(args, Cons(body, NIL))) ->     
         String.Format("Lambda({0}, {1})", PrintSexp args, PrintSexp body)
     | Function(_) -> "Native Function"
     | True -> "#True"
@@ -602,28 +606,31 @@ let rec ParseAst (env : Env) ast =
             ParseAst env parsed
         | _ -> failwith "Expected a function!"
     // Lookup identifiers
-    | Lambda(arguments, body) ->
-        // Wrap executon of body in a function
-        // We can create a copy of the current env
-        // so we dont forget the values of vars
-        // that might be changed
-        //let env_for_fun = env.Copy()
-        let env_for_fun = env
-        Function(fun x ->
-            // x holds already evaled arguments
-            // create a new environment
+    | Lambda(ls) ->
+        match ls with
+        | Cons(arguments, Cons(body, NIL)) ->
+            // Wrap executon of body in a function
+            // We can create a copy of the current env
+            // so we dont forget the values of vars
+            // that might be changed
+            //let env_for_fun = env.Copy()
+            let env_for_fun = env
+            Function(fun x ->
+                // x holds already evaled arguments
+                // create a new environment
 
-            // we copy the captured environment
-            // to avoid the need to UnWrap() and
-            // to allow reentrant functions
-            let new_env = env_for_fun.Copy().Wrap()
-            arguments.ZipDiscard x (fun name sexpr -> 
-                match name with
-                | Atom(name) -> new_env.Put(name, sexpr) |> ignore
-                                sexpr
-                | _ -> failwith "Invalid argument!")
-            // Parse body with the new environment
-            ParseAst new_env body)
+                // we copy the captured environment
+                // to avoid the need to UnWrap() and
+                // to allow reentrant functions
+                let new_env = env_for_fun.Copy().Wrap()
+                arguments.ZipDiscard x (fun name sexpr -> 
+                    match name with
+                    | Atom(name) -> new_env.Put(name, sexpr) |> ignore
+                                    sexpr
+                    | _ -> failwith "Invalid argument!")
+                // Parse body with the new environment
+                ParseAst new_env body)
+        | _ -> failwith "Invalid arguments to lambda!"
     | Unquote(_) -> failwith "Unquote is only valid inside a quasiquote!"
     | Atom(name) -> env.Lookup(name)    
     // Atomic literals evalutate to themselves
