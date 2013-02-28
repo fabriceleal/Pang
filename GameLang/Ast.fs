@@ -14,7 +14,7 @@ type SObject =
     | Let of SObject * list<SObject>
     | If of SObject * SObject * SObject
     | Define of SObject * SObject
-    | Set of SObject * SObject
+    | Set of SObject
     | Quote of SObject    
     | Begin of SObject
     | Rest of string
@@ -414,10 +414,13 @@ let rec PrintSexp = function
         String.Format("Quasiquote({0})", PrintSexp sexpr)
     | Unquote(sexpr) ->
         String.Format("Unquote({0})", [PrintSexp sexpr])
-    | Set(id, sexpr) ->
-        match id with
-        | Atom(name) -> String.Format("Set!({0}, {1})", name, PrintSexp sexpr)
-        | _ -> failwith "Invalid set!"
+    | Set(args) ->
+        match args with
+        | Cons(id, Cons(sexpr, _)) ->
+            match id with
+            | Atom(name) -> String.Format("Set!({0}, {1})", name, PrintSexp sexpr)
+            | _ -> failwith "Invalid set!"
+        | _ -> failwith "Invalid args to set!"
     | Quote(sexpr) ->
         String.Format("Quote({0})", [PrintSexp sexpr])
     | Let_Star(bindings, sexpr) ->
@@ -513,13 +516,16 @@ let rec ParseAst (env : Env) ast =
         //"Args to begin" |> Console.WriteLine
         //PrintTree ls |> Console.WriteLine
         ls.ConsMap (ParseAst env) |> Last
-    | Set(id, sexpr) ->
-        match id with
-        | Atom(name) -> 
-            let parsed = ParseAst env sexpr
-            env.Change(name, parsed) |> ignore
-            parsed
-        | _ -> failwith "Invalid set!"
+    | Set(args) ->
+        match args with
+        | Cons(id, Cons(sexpr, _)) ->
+            match id with
+            | Atom(name) -> 
+                let parsed = ParseAst env sexpr
+                env.Change(name, parsed) |> ignore
+                parsed
+            | _ -> failwith "Invalid set!"
+        | _ -> failwith "Invalid arguments to set!"
     | Quote(sexpr) -> sexpr
     | Let_Star(bindings, sexpr) ->
         let new_env = env.Wrap()

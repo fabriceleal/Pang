@@ -133,8 +133,11 @@ Unquote:
 	| UNQUOTE_SPLICING Sexpr				{ UnquoteSplicing($2) }
 	| UNQUOTE Sexpr							{ Unquote($2) }
 
+Set_Scons:
+	| Atom Sexpr									{ Cons($1, Cons($2, NIL)) }
+
 Set:
-	| OPEN_PAREN SET Atom Sexpr CLOSE_PAREN			{ Set($3, $4)}
+	| OPEN_PAREN SET Set_Scons CLOSE_PAREN			{ Set($3) }
 
 Begin:
 	| OPEN_PAREN BEGIN Sexpr_Consed CLOSE_PAREN		{ Begin($3) }
