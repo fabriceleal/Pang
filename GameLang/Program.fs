@@ -69,7 +69,8 @@ printfn "Executing code ..."
 //List.map (ParseAst (CoreEnv null null)) test |> ignore
 
 let pang = new Pang(null, null)
-pang.ParseString "(display '(hello world))" |> ignore
+//pang.ParseString "(display '(hello world))" |> ignore
+pang.ParseString "(let ((x 10) (y (list 1 2 3))) (begin (display x) (display y)))" |> ignore
 
 
 printfn "Press any key to continue..."

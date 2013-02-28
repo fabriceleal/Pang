@@ -80,21 +80,6 @@ Atom:
 Identifier:
 	| IDENTIFIER					{ Atom($1) }
 
-Sexpr_Consed:
-	| Sexpr							{ Cons($1, NIL) }
-	| Sexpr_Consed Sexpr			{ AppendCons $1 $2 }
-
-Id_Consed:
-	| Identifier					{ Cons($1, NIL) }
-	| Id_Consed Identifier			{ AppendCons ($1) (Cons($2, NIL)) }
-
-Rest:
-	| IDENTIFIER					{ $1 }
-
-Id_Consed_With_Rest:
-	| Id_Consed						{ $1 }
-	| Id_Consed DOT Rest			{ AppendCons ($1) (Cons(Rest($3), NIL)) }
-
 List_of_Identifiers:
 	| OPEN_PAREN CLOSE_PAREN				{ NIL }
 	| OPEN_PAREN Atom_Consed CLOSE_PAREN	{ $2 }
@@ -107,7 +92,7 @@ Lambda:
 	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Lambda($3, $4) }
 
 If:
-	| OPEN_PAREN IF Sexpr Sexpr Sexpr CLOSE_PAREN	{ If($3, $4, $5) }
+	| OPEN_PAREN IF ThreeSexpr CLOSE_PAREN	{ If($3) }
 
 Define:
 	| OPEN_PAREN DEFINE Identifier Sexpr CLOSE_PAREN { Define($3, $4) }
@@ -123,7 +108,7 @@ Let_Binding_Plus:
 	| Let_Binding_Plus Let_Binding	{ AppendCons $1 $2 }
 
 Let_Binding: 
-	| OPEN_PAREN Atom Sexpr CLOSE_PAREN	{ Cons($2, $3) }
+	| OPEN_PAREN Set_Scons CLOSE_PAREN	{ $2 }
 
 Quote:
 	| OPEN_PAREN QUOTE_STRING Sexpr CLOSE_PAREN { Quote($3) }
@@ -133,14 +118,34 @@ Unquote:
 	| UNQUOTE_SPLICING Sexpr				{ UnquoteSplicing($2) }
 	| UNQUOTE Sexpr							{ Unquote($2) }
 
-Set_Scons:
-	| Atom Sexpr									{ Cons($1, Cons($2, NIL)) }
-
 Set:
 	| OPEN_PAREN SET Set_Scons CLOSE_PAREN			{ Set($3) }
 
 Begin:
 	| OPEN_PAREN BEGIN Sexpr_Consed CLOSE_PAREN		{ Begin($3) }
+
+// -----------------------------------------------------------------
+
+Sexpr_Consed:
+	| Sexpr							{ Cons($1, NIL) }
+	| Sexpr_Consed Sexpr			{ AppendCons $1 $2 }
+
+Id_Consed:
+	| Identifier					{ Cons($1, NIL) }
+	| Id_Consed Identifier			{ AppendCons ($1) (Cons($2, NIL)) }
+
+Rest:
+	| IDENTIFIER					{ $1 }
+
+Id_Consed_With_Rest:
+	| Id_Consed						{ $1 }
+	| Id_Consed DOT Rest			{ AppendCons ($1) (Cons(Rest($3), NIL)) }
+
+ThreeSexpr:
+	| Sexpr Sexpr Sexpr						{ Cons($1, Cons($2, Cons($3, NIL))) }
+
+Set_Scons:
+	| Atom Sexpr									{ Cons($1, Cons($2, NIL)) }
 
 // -----------------------------------------------------------------
 

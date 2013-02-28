@@ -12,7 +12,7 @@ type SObject =
     | UnquoteSplicing of SObject
     | Let_Star of SObject * list<SObject>
     | Let of SObject * list<SObject>
-    | If of SObject * SObject * SObject
+    | If of SObject
     | Define of SObject * SObject
     | Set of SObject
     | Quote of SObject    
@@ -414,13 +414,8 @@ let rec PrintSexp = function
         String.Format("Quasiquote({0})", PrintSexp sexpr)
     | Unquote(sexpr) ->
         String.Format("Unquote({0})", [PrintSexp sexpr])
-    | Set(args) ->
-        match args with
-        | Cons(id, Cons(sexpr, _)) ->
-            match id with
-            | Atom(name) -> String.Format("Set!({0}, {1})", name, PrintSexp sexpr)
-            | _ -> failwith "Invalid set!"
-        | _ -> failwith "Invalid args to set!"
+    | Set(Cons(Atom(name), Cons(sexpr, NIL))) ->
+         String.Format("Set!({0}, {1})", name, PrintSexp sexpr)        
     | Quote(sexpr) ->
         String.Format("Quote({0})", [PrintSexp sexpr])
     | Let_Star(bindings, sexpr) ->
@@ -433,7 +428,7 @@ let rec PrintSexp = function
             List.map PrintSexp sexpr)
     | Define(id, exp) ->
         String.Format("Define({0}, {1})", PrintSexp id, PrintSexp exp)
-    | If(condition, trueBr, falseBr) ->
+    | If(Cons(condition, Cons(trueBr, Cons(falseBr, NIL)))) ->
         String.Format("If({0}, {1}, {2})", PrintSexp condition, PrintSexp trueBr, PrintSexp falseBr)
     | Cons(head, tail) -> 
         String.Format("Cons({0}, {1})", PrintSexp head, PrintSexp tail)
@@ -502,7 +497,7 @@ let rec ParseAst (env : Env) ast =
                 | _, _ -> 
                     // do regular stuff ...
                     Cons(WalkQuasiquote a, WalkQuasiquote b)
-            | If(a, b, c) -> If(WalkQuasiquote a, WalkQuasiquote b, WalkQuasiquote c)
+            | If(ls) -> If(WalkQuasiquote ls)
             | Begin(ls) -> Begin(WalkQuasiquote ls)
             // set!
             // let*
@@ -532,7 +527,7 @@ let rec ParseAst (env : Env) ast =
         // Parse and add bindings to new environment
         bindings.ConsMap (
             function
-            | Cons(Atom(name), value) ->
+            | Cons(Atom(name), Cons(value, NIL)) ->
                 // Parse and add bindings to new environment
                 let parsed = ParseAst new_env value
                 new_env.Put(name, parsed) |> ignore 
@@ -543,10 +538,11 @@ let rec ParseAst (env : Env) ast =
         // Return last parsed element
         List.map (ParseAst new_env) sexpr |> List.rev |> List.head
     | Let(bindings, sexpr) ->
+        //PrintTree bindings |> Console.Write
         let new_env = env.Wrap()
         bindings.ConsMap (
             function
-            | Cons(Atom(name), value) ->
+            | Cons(Atom(name), Cons(value, NIL)) ->
                 // Parse and add bindings to new environment
                 let parsed = ParseAst env value
                 new_env.Put(name, parsed) |> ignore
@@ -565,7 +561,7 @@ let rec ParseAst (env : Env) ast =
             parse
         | _ -> failwith "Invalid define!"
     // if
-    | If(_condition, _true_branch, _false_branch) ->
+    | If(Cons(_condition, Cons(_true_branch, Cons(_false_branch, NIL)))) ->
         match ParseAst env _condition with
         | False -> ParseAst env _false_branch
         | _ -> ParseAst env _true_branch

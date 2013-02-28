@@ -1,5 +1,6 @@
 ﻿namespace ParsingTests
 
+open System
 open System.IO
 open System.Reflection
 open System.Text
@@ -24,11 +25,13 @@ type Test_UnitTest1() =
             pang.ParseString code |> ignore
             let actualOutput = sb.ToString()
             // Print StdOut to somewhere where we can read
-            Debug.Print(actualOutput)
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") |> Debug.Print 
+            Debug.Print actualOutput
             Assert.AreEqual(expectedOutput, actualOutput, "Output is not what I expected!")
             out.Close()
         with
             | _ as ex ->
+                Debug.Print ex.Message
                 Assert.Fail ex.Message
 
     [<TestMethod>]        
