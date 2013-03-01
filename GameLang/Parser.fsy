@@ -132,20 +132,14 @@ Sexpr_Consed:
 
 Id_Consed:
 	| Identifier					{ Cons($1, NIL) }
-	| Id_Consed Identifier			{ AppendCons ($1) (Cons($2, NIL)) }
-
-Rest:
-	| IDENTIFIER					{ $1 }
-
-Id_Consed_With_Rest:
-	| Id_Consed						{ $1 }
-	| Id_Consed DOT Rest			{ AppendCons ($1) (Cons(Rest($3), NIL)) }
+	| Id_Consed DOT Identifier		{ SetCdrOfLast $1 $3 }
+	| Id_Consed Identifier			{ AppendCons $1 $2 }
 
 ThreeSexpr:
 	| Sexpr Sexpr Sexpr						{ Cons($1, Cons($2, Cons($3, NIL))) }
 
 Set_Scons:
-	| Atom Sexpr									{ Cons($1, Cons($2, NIL)) }
+	| Atom Sexpr							{ Cons($1, Cons($2, NIL)) }
 
 // -----------------------------------------------------------------
 
@@ -155,4 +149,4 @@ Quasiquote:
 // -----------------------------------------------------------------
 
 Macro:
-	| OPEN_PAREN DEFINE_MACRO OPEN_PAREN Id_Consed_With_Rest CLOSE_PAREN Sexpr CLOSE_PAREN { Cons(Atom("define-macro"),  Cons($4, Cons($6, NIL))) }
+	| OPEN_PAREN DEFINE_MACRO OPEN_PAREN Id_Consed CLOSE_PAREN Sexpr CLOSE_PAREN { Cons(Atom("define-macro"),  Cons($4, Cons($6, NIL))) }

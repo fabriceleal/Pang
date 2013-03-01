@@ -251,15 +251,6 @@ let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> SObject =
     __SysDisplay;;
 
 
-//let SysDisplay (args : SObject) : SObject = 
-//    match args with
-//    | Cons(to_display, NIL) ->
-//        let displayed = to_display.ToString()
-//        Console.WriteLine displayed |> ignore
-//        String(displayed)
-//    | _ -> failwith "display expects one argument!";;
-
-
 // This does not evaluate exactly 
 // like common lisp
 let SysArith (name : String) (nullelement : float) (func : float -> float -> float) (args: SObject) : SObject =
@@ -360,6 +351,13 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
     | Cons(h, NIL) -> Cons(h, AppendCons NIL tail)
     | Cons(h, t) -> Cons(h, AppendCons t tail)
     | _ -> failwith "Unexpected object in AppendCons!";;
+
+
+let rec SetCdrOfLast (cons : SObject) (newcdr : SObject) =
+    match cons with
+    | Cons(h, NIL) -> Cons(h, newcdr)
+    | Cons(h, t) -> Cons(h, SetCdrOfLast t newcdr)
+    | _ -> failwith "Unexpected object in SetCdrOfLast!";;
 
 
 let rec AppendForSplice (cons : SObject) (tail : SObject) =
@@ -582,18 +580,40 @@ let rec ParseAst (env : Env) ast =
             let new_env = env.Copy().Wrap()
             
             let rec parseMacroArgs args pars =
-                match args with
-                | Cons(s, t) ->
-                    match pars with
-                    | Cons(p1, p2) ->
-                        match s with
-                        | Cons(Atom(a), NIL) ->
-                            new_env.Put(a, p1) |> ignore
-                            parseMacroArgs t p2
-                        | Cons(Rest(r), NIL) -> 
-                            new_env.Put(r, pars) |> ignore
-                        | _ -> failwith "not what was expected!"                       
-                    | _ -> failwith "not what was expected!"                     
+                // args contains the names of the vars 
+                // pars contains the values of the vars               
+                match args with                
+                | Cons(args_head, args_tail) ->
+                    // args_head will contain the var to bind
+                    // t has:
+                    // - the tail, if args is a list
+                    // - the 'rest', if args is a dotted-pair
+                    match args_tail with                    
+                    | Cons(_, _) ->
+                        // t is a list,
+                        // so args is a list
+                        match pars with
+                        | Cons(pars_head, pars_tail) ->
+                            match args_head with
+                            | Atom(a) ->
+                                new_env.Put(a, pars_head) |> ignore
+                                parseMacroArgs args_tail pars_tail
+                            | _ -> failwith ""
+                        | _ -> failwith ""
+                    | _ ->
+                        // t is not a list,
+                        // so args is a dotted pair
+                        match pars with
+                        | Cons(pars_head, pars_tail) ->
+                            match args_tail with
+                            | Atom(t) -> 
+                                match args_head with
+                                | Atom(a) ->
+                                    new_env.Put(a, pars_head) |> ignore
+                                | _ -> failwith ""
+                                new_env.Put(t, pars_tail) |> ignore
+                            | _ -> failwith "not what was expected!"                       
+                        | _ -> failwith "not what was expected!"                     
                 | _ -> failwith "not what was expected!"
 
             parseMacroArgs args _args
