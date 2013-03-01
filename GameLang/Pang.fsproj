@@ -59,8 +59,12 @@
   </PropertyGroup>
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')" />
   <PropertyGroup>
-    <PreBuildEvent>"C:\Program Files (x86)\FSharpPowerPack-4.0.0.0\bin\fslex" --unicode "$(ProjectDir)Lexer.fsl"
-"C:\Program Files (x86)\FSharpPowerPack-4.0.0.0\bin\fsyacc" --module Parser "$(ProjectDir)Parser.fsy"</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PreBuildEvent>powershell -File "$(ProjectDir)GenLexer.ps1" "$(ProjectDir)"
+powershell -File "$(ProjectDir)GenParser.ps1" "$(ProjectDir)"</PreBuildEvent>
   </PropertyGroup>
   <!--
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
