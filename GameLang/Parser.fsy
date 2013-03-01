@@ -89,13 +89,13 @@ Atom_Consed:
 	| Atom_Consed Atom				{ AppendCons $1 $2 }
 
 Lambda:
-	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Lambda(Cons($3, Cons($4, NIL))) }
+	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Cons(Atom("lambda"), Cons($3, Cons($4, NIL))) }
 
 If:
 	| OPEN_PAREN IF ThreeSexpr CLOSE_PAREN	{ If($3) }
 
 Define:
-	| OPEN_PAREN DEFINE Identifier Sexpr CLOSE_PAREN { Define($3, $4) }
+	| OPEN_PAREN DEFINE Identifier Sexpr CLOSE_PAREN { Cons(Atom("define"), Cons($3, Cons($4, NIL))) }
 
 Let:
 	| OPEN_PAREN LET OPEN_PAREN Let_Binding_Plus CLOSE_PAREN Sexpr_Plus CLOSE_PAREN	{ Let($4, $6) }
@@ -122,7 +122,7 @@ Set:
 	| OPEN_PAREN SET Set_Scons CLOSE_PAREN			{ Set($3) }
 
 Begin:
-	| OPEN_PAREN BEGIN Sexpr_Consed CLOSE_PAREN		{ Begin($3) }
+	| OPEN_PAREN BEGIN Sexpr_Consed CLOSE_PAREN		{ Cons(Atom("begin"), $3) }
 
 // -----------------------------------------------------------------
 
@@ -155,4 +155,4 @@ Quasiquote:
 // -----------------------------------------------------------------
 
 Macro:
-	| OPEN_PAREN DEFINE_MACRO OPEN_PAREN Id_Consed_With_Rest CLOSE_PAREN Sexpr CLOSE_PAREN { DefineMacro($4, $6) }
+	| OPEN_PAREN DEFINE_MACRO OPEN_PAREN Id_Consed_With_Rest CLOSE_PAREN Sexpr CLOSE_PAREN { Cons(Atom("define-macro"),  Cons($4, Cons($6, NIL))) }

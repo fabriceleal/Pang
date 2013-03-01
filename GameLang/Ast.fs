@@ -13,15 +13,9 @@ type SObject =
     | Let_Star of SObject * list<SObject>
     | Let of SObject * list<SObject>
     | If of SObject
-    | Define of SObject * SObject
     | Set of SObject
     | Quote of SObject    
-    | Begin of SObject
     | Rest of string
-    | DefineMacro of SObject * SObject
-    // This might sound like a native, but will actually
-    // be translated to a Function(...)
-    | Lambda of SObject
     // Native Values
     | Syntax of SObject * SObject
     | Number of float    
@@ -45,10 +39,6 @@ type SObject =
         // Scalar types
         | Atom(s) -> s
         | Number(i) -> i.ToString()
-        | Lambda(ls) ->             
-            match ls with
-            | Cons(args, Cons(body, NIL)) -> String.Format("<lambda {0} {1}>", args, body)
-            | _ -> failwith "Invalid arguments to lambda!"
         | Function(_) -> "<system function>"
         | String(s) -> String.Format("\"{0}\"", s)
         | NIL -> "NIL"
@@ -408,12 +398,9 @@ let rec AppendForSplice (cons : SObject) (tail : SObject) =
 let rec PrintSexp = function  
     // Im too lazy ...
     | Syntax(_) -> "Syntax *"
-    | DefineMacro(_, _) -> "Define-Macro *"
     | Rest(_) -> "Rest *"
     | UnquoteSplicing(_) -> "Unquote-splicing *"
     // OK
-    | Begin(ls) ->
-        String.Format("Begin({0})", PrintSexp ls)
     | Quasiquote(sexpr) ->
         String.Format("Quasiquote({0})", PrintSexp sexpr)
     | Unquote(sexpr) ->
@@ -430,8 +417,6 @@ let rec PrintSexp = function
         String.Format("Let({0}, {1})", 
             PrintSexp bindings, 
             List.map PrintSexp sexpr)
-    | Define(id, exp) ->
-        String.Format("Define({0}, {1})", PrintSexp id, PrintSexp exp)
     | If(Cons(condition, Cons(trueBr, Cons(falseBr, NIL)))) ->
         String.Format("If({0}, {1}, {2})", PrintSexp condition, PrintSexp trueBr, PrintSexp falseBr)
     | Cons(head, tail) -> 
@@ -439,8 +424,6 @@ let rec PrintSexp = function
     | Atom(name) -> String.Format("Atom({0})", name)                 
     | Number(n) -> String.Format("Number({0})", n)
     | String(s) -> String.Format("String({0})", s)
-    | Lambda(Cons(args, Cons(body, NIL))) ->     
-        String.Format("Lambda({0}, {1})", PrintSexp args, PrintSexp body)
     | Function(_) -> "Native Function"
     | True -> "#True"
     | False -> "#False"
@@ -463,18 +446,6 @@ let PrintTree tree =
 
 let rec ParseAst (env : Env) ast =
     match ast with
-    | DefineMacro(macro_args, body) ->
-        match macro_args with
-        | Cons(id, args) -> 
-            match id with
-            | Atom(name) -> 
-                // Create a Syntax object
-                let parse = Syntax(args, body)
-                // Bind that to the name
-                env.Put(name, parse) |> ignore
-                parse
-            | _ -> failwith "Name should be an atom!"
-        | _ -> failwith "Expected name of the macro!"
     | Quasiquote(sexpr) ->
         // Find all unquotes inside sexpr, 
         // parse them. Any unquote outside a quasiquote is invalid!!!
@@ -502,7 +473,6 @@ let rec ParseAst (env : Env) ast =
                     // do regular stuff ...
                     Cons(WalkQuasiquote a, WalkQuasiquote b)
             | If(ls) -> If(WalkQuasiquote ls)
-            | Begin(ls) -> Begin(WalkQuasiquote ls)
             // set!
             // let*
             // let
@@ -511,7 +481,7 @@ let rec ParseAst (env : Env) ast =
             // Return everything else as-is
             | x -> x
         WalkQuasiquote sexpr
-    | Begin(ls) ->
+    | Cons(Atom("begin"), ls) ->
         //"Args to begin" |> Console.WriteLine
         //PrintTree ls |> Console.WriteLine
         ls.ConsMap (ParseAst env) |> Last
@@ -557,13 +527,58 @@ let rec ParseAst (env : Env) ast =
         // Parse; 
         // Return last parsed element
         List.map (ParseAst new_env) sexpr |> List.rev |> List.head
-    | Define(identifier, exp) ->
-        match identifier with
-        | Atom(name) ->
-            let parse = ParseAst env exp
-            env.Put(name, parse) |> ignore
-            parse
-        | _ -> failwith "Invalid define!"
+    | Cons(Atom("define-macro"), args) ->
+        match args with
+        | Cons(macro_args, Cons(body, NIL)) -> 
+            match macro_args with
+            | Cons(id, args) -> 
+                match id with
+                | Atom(name) -> 
+                    // Create a Syntax object
+                    let parse = Syntax(args, body)
+                    // Bind that to the name
+                    env.Put(name, parse) |> ignore
+                    parse
+                | _ -> failwith "Name should be an atom!"
+            | _ -> failwith "Expected name of the macro!"
+        | _ -> failwith "Invalid args to define-macro"
+    | Cons(Atom("define"), args) ->
+        // Special form define
+        match args with
+        | Cons(identifier, Cons(exp, NIL)) ->
+            match identifier with
+            | Atom(name) ->
+                let parse = ParseAst env exp
+                env.Put(name, parse) |> ignore
+                parse
+            | _ -> failwith "Invalid identifier for define!"
+        | _ -> failwith "Invalid args for define!"
+    | Cons(Atom("lambda"), ls) ->
+        // Lambda special form
+        match ls with
+        | Cons(arguments, Cons(body, NIL)) ->
+            // Wrap executon of body in a function
+            // We can create a copy of the current env
+            // so we dont forget the values of vars
+            // that might be changed
+            //let env_for_fun = env.Copy()
+            let env_for_fun = env
+            Function(fun x ->
+                // x holds already evaled arguments
+                // create a new environment
+
+                // we copy the captured environment
+                // to avoid the need to UnWrap() and
+                // to allow reentrant functions
+                let new_env = env_for_fun.Copy().Wrap()
+                arguments.ZipDiscard x (fun name sexpr -> 
+                    match name with
+                    | Atom(name) -> new_env.Put(name, sexpr) |> ignore
+                                    sexpr
+                    | _ -> failwith "Invalid argument!")
+                // Parse body with the new environment
+                ParseAst new_env body)
+        | _ -> failwith "Invalid arguments to lambda!"
     // if
     | If(Cons(_condition, Cons(_true_branch, Cons(_false_branch, NIL)))) ->
         match ParseAst env _condition with
@@ -605,32 +620,6 @@ let rec ParseAst (env : Env) ast =
             // And parse it!
             ParseAst env parsed
         | _ -> failwith "Expected a function!"
-    // Lookup identifiers
-    | Lambda(ls) ->
-        match ls with
-        | Cons(arguments, Cons(body, NIL)) ->
-            // Wrap executon of body in a function
-            // We can create a copy of the current env
-            // so we dont forget the values of vars
-            // that might be changed
-            //let env_for_fun = env.Copy()
-            let env_for_fun = env
-            Function(fun x ->
-                // x holds already evaled arguments
-                // create a new environment
-
-                // we copy the captured environment
-                // to avoid the need to UnWrap() and
-                // to allow reentrant functions
-                let new_env = env_for_fun.Copy().Wrap()
-                arguments.ZipDiscard x (fun name sexpr -> 
-                    match name with
-                    | Atom(name) -> new_env.Put(name, sexpr) |> ignore
-                                    sexpr
-                    | _ -> failwith "Invalid argument!")
-                // Parse body with the new environment
-                ParseAst new_env body)
-        | _ -> failwith "Invalid arguments to lambda!"
     | Unquote(_) -> failwith "Unquote is only valid inside a quasiquote!"
     | Atom(name) -> env.Lookup(name)    
     // Atomic literals evalutate to themselves
