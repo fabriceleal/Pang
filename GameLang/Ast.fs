@@ -10,7 +10,6 @@ type SObject =
     | Quasiquote of SObject
     | Unquote of SObject
     | UnquoteSplicing of SObject
-    | Let_Star of SObject * list<SObject>
     | Quote of SObject    
     | Rest of string
     // Native Values
@@ -64,7 +63,7 @@ type SObject =
             | _ -> failwith "another is not a cons cell!"
         | NIL -> []
         | _ -> failwith "this is not a cons cell!"
-
+            
     member this.ZipDiscard (another : SObject) (f : SObject -> SObject -> _) =
         match this with       
         | Cons(sth, sth_tail) ->
@@ -76,23 +75,13 @@ type SObject =
         | NIL -> ignore()
         | _ -> failwith "this is not a cons cell!"
 
+    // The List.Map for Cons lists
     member this.ConsMap (f : SObject -> SObject) =
         match this with
         | Cons(something, tail) -> Cons(f something, tail.ConsMap f)
         | NIL -> NIL
         | _ -> failwith "Only for cons lists!";;
 
-//let rec ConsToString cell = 
-//    match cell with
-//    // This is a list
-//    | Cons(_, Cons(_, _)) -> 
-//        let stringified = cell.Map ConsToString
-//        String.Format("({0})", List.fold (fun tot it -> tot + " " + it) stringified.Head stringified.Tail)
-//    // A one element list
-//    | Cons(h, NIL) -> String.Format("({0})", h.ToString())
-//    // A cons cell
-//    | Cons(fst, snd) -> String.Format("({0} . {1})", fst.ToString(), snd.ToString())
-//    | _ -> cell.ToString();;
 
 type EnvImpl = 
     val inner : Option<EnvImpl>
@@ -385,23 +374,20 @@ let rec PrintSexp = function
     // Im too lazy ...
     | Syntax(_) -> "Syntax *"
     | Rest(_) -> "Rest *"
-    | UnquoteSplicing(_) -> "Unquote-splicing *"
+    | UnquoteSplicing(sexpr) -> 
+        String.Format(",@{0}", PrintSexp sexpr)
     // OK
     | Quasiquote(sexpr) ->
-        String.Format("Quasiquote({0})", PrintSexp sexpr)
+        String.Format("`{0}", PrintSexp sexpr)
     | Unquote(sexpr) ->
-        String.Format("Unquote({0})", [PrintSexp sexpr])     
+        String.Format(",{0}", PrintSexp sexpr)     
     | Quote(sexpr) ->
-        String.Format("Quote({0})", [PrintSexp sexpr])
-    | Let_Star(bindings, sexpr) ->
-        String.Format("Let({0}, {1})", 
-            PrintSexp bindings, 
-            List.map PrintSexp sexpr)
+        String.Format("'{0}", PrintSexp sexpr)
     | Cons(head, tail) -> 
         String.Format("Cons({0}, {1})", PrintSexp head, PrintSexp tail)
-    | Atom(name) -> String.Format("Atom({0})", name)                 
-    | Number(n) -> String.Format("Number({0})", n)
-    | String(s) -> String.Format("String({0})", s)
+    | Atom(name) -> String.Format("<{0}>", name)                 
+    | Number(n) -> String.Format("{0}", n)
+    | String(s) -> String.Format("\"{0}\"", s)
     | Function(_) -> "Native Function"
     | True -> "#True"
     | False -> "#False"
@@ -454,46 +440,65 @@ let rec ParseAst (env : Env) ast =
             | x -> x
         WalkQuasiquote sexpr
     | Quote(sexpr) -> sexpr
-    | Let_Star(bindings, sexpr) ->
-        let new_env = env.Wrap()
-        // Parse and add bindings to new environment
-        bindings.ConsMap (
-            function
-            | Cons(Atom(name), Cons(value, NIL)) ->
-                // Parse and add bindings to new environment
-                let parsed = ParseAst new_env value
-                new_env.Put(name, parsed) |> ignore 
-                // Create a clean env before continuing
-                new_env.Wrap() |> ignore             
-                parsed
-            | _ -> failwith "WTF???") |> ignore
-        // Return last parsed element
-        List.map (ParseAst new_env) sexpr |> List.rev |> List.head
-    //| Let(bindings, sexpr) ->
-    | Cons(Atom("let"), Cons(bindings, sexpr)) ->
-        // Create a lambda. let is a non-native special-form
-        // so we will implement it with simpler native forms
+    | Cons(Atom("let*"), args) ->
+        match args with
+        | Cons(bindings, sexpr) -> 
+            // Create a lambda / application for each binding
+            // ((lambda (id-1) X) value-1)
+            // X = ((lambda (id-2) Y) value-2)
+            // Y = sexpr
 
-        // First we need to split bindings into two lists:
-        // - one with the arguments' names
-        // - another with the actual values
-        let args = ref NIL
-        let values = ref NIL
+            let rec transformBindings binds = 
+                match binds with
+                | Cons(pair, NIL) ->
+                    match pair with
+                    | Cons(id, Cons(value, NIL)) ->
+                        Cons(Cons(Atom("lambda"), Cons(Cons(id, NIL), Cons(Cons(Atom("begin"), sexpr), NIL))), Cons(value, NIL))
+                    | _ -> failwith "Unexpected pair!"
+                | Cons(pair, tail) ->
+                    match pair with
+                    | Cons(id, Cons(value, NIL)) ->
+                        Cons(Cons(Atom("lambda"), Cons(Cons(id, NIL), Cons(transformBindings tail, NIL))), Cons(value, NIL))
+                    | _ -> failwith "Unexpected pair!"
+                | _ -> failwith "Unexpected bindings!"
+                            
+            let transformed = transformBindings bindings            
+            ParseAst env transformed
+        | _ -> failwith "Invalid arguments to let*!"
+    | Cons(Atom("let"), args) ->
+        match args with
+        | Cons(bindings, sexpr) ->
+            // Create a lambda. let is a non-native special-form
+            // so we will implement it with simpler native forms
+            
+            // First we need to split bindings into two lists:
+            // - one with the arguments' names
+            // - another with the actual values
+            let args = ref NIL
+            let values = ref NIL
 
-        bindings.MapDiscard (fun pair ->
-            match pair with
-            | Cons(id, Cons(value, NIL)) -> 
-                args := AppendCons !args id
-                values := AppendCons !values value
-            | _ -> failwith "Unexpected pair!"
-        ) |> ignore
+            bindings.MapDiscard (fun pair ->
+                match pair with
+                | Cons(id, Cons(value, NIL)) -> 
+                    args := AppendCons !args id
+                    values := AppendCons !values value
+                | _ -> failwith "Unexpected pair!"
+            ) |> ignore
 
-        // then we create a lambda cons list
-        let as_lambda = Cons(Atom("lambda"), Cons(!args, Cons(Cons(Atom("begin"), sexpr), NIL)))
-        // and the use it for a function application
-        let transformed = Cons(as_lambda, !values)        
-        // and then we parse it!
-        ParseAst env transformed
+            // If we have args, wrap everything with a lambda
+            // Otherwise, just execute sexpr
+            match !args with
+            | NIL -> 
+                ParseAst env sexpr
+            | _ -> 
+                // create a lambda cons list
+                let as_lambda = Cons(Atom("lambda"), Cons(!args, Cons(Cons(Atom("begin"), sexpr), NIL)))
+                // and the use it for a function application
+                let transformed = Cons(as_lambda, !values)        
+                // and then we parse it!
+                ParseAst env transformed
+
+        | _ -> failwith "Invalid arguments to let!"        
     | Cons(Atom("begin"), ls) ->
         ls.ConsMap (ParseAst env) |> Last
     | Cons(Atom("set!"), args) ->
@@ -558,7 +563,6 @@ let rec ParseAst (env : Env) ast =
                 // Parse body with the new environment
                 ParseAst new_env body)
         | _ -> failwith "Invalid arguments to lambda!"
-    // if
     | Cons(Atom("if"), args) ->
         match args with
         | Cons(_condition, Cons(_true_branch, Cons(_false_branch, NIL))) ->
@@ -592,8 +596,6 @@ let rec ParseAst (env : Env) ast =
                     | _ -> failwith "not what was expected!"                     
                 | _ -> failwith "not what was expected!"
 
-            //let x = matchArgs f
-
             parseMacroArgs args _args
 
             // Create the tree
@@ -604,7 +606,7 @@ let rec ParseAst (env : Env) ast =
         | _ -> failwith "Expected a function!"
     | Unquote(_) -> failwith "Unquote is only valid inside a quasiquote!"
     | Atom(name) -> env.Lookup(name)    
-    // Atomic literals evalutate to themselves
+    // Scalar literals evaluate to themselves
     | String(_) | Number(_) | NIL | True | False -> ast
     | _ -> failwith "Error!";;
     

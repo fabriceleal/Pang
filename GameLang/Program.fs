@@ -70,7 +70,7 @@ printfn "Executing code ..."
 
 let pang = new Pang(null, null)
 //pang.ParseString "(display '(hello world))" |> ignore
-pang.ParseString "(let ((x 10) (y (list 1 2 3))) (begin (display x) (display y)))" |> ignore
+//pang.ParseString "(let ((x 10) (y (list 1 2 3))) (begin (display x) (display y)))" |> ignore
 //pang.ParseString "(define-macro (unless condition . body)
 //                           `(if ,condition
 //                                nil
@@ -78,7 +78,7 @@ pang.ParseString "(let ((x 10) (y (list 1 2 3))) (begin (display x) (display y))
 //
 //                        (begin (display '(hello world)) (display 'the-end))
 //                        (unless #f (display '(hello world)) (display 'the-end))" |> ignore
-
+pang.ParseString "(let* ((x 10) (y (+ x x))) (display y))" |> ignore
 
 printfn "Press any key to continue..."
 System.Console.ReadLine() |> ignore
