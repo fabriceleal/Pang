@@ -128,6 +128,7 @@ Begin:
 
 Sexpr_Consed:
 	| Sexpr							{ Cons($1, NIL) }
+	| Sexpr_Consed DOT Sexpr		{ SetCdrOfLast $1 $3 }
 	| Sexpr_Consed Sexpr			{ AppendCons $1 $2 }
 
 Id_Consed:

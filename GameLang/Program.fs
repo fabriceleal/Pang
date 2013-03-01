@@ -79,6 +79,9 @@ pang.ParseString "(define-macro (unless condition true-return . body)
                         (begin (display '(hello world)) (display 'the-end))
                         (unless #f nil (display '(hello world)) (display 'the-end))" |> ignore
 //pang.ParseString "(let* ((x 10) (y (+ x x))) (display y))" |> ignore
+//pang.ParseString "(display '(hello . (world . nil)))
+//                    (display '(hello world))
+//                    (display (list 'hello 'world))" |> ignore
 
 printfn "Press any key to continue..."
 System.Console.ReadLine() |> ignore
