@@ -12,8 +12,6 @@ type SObject =
     | UnquoteSplicing of SObject
     | Let_Star of SObject * list<SObject>
     | Let of SObject * list<SObject>
-    | If of SObject
-    | Set of SObject
     | Quote of SObject    
     | Rest of string
     // Native Values
@@ -404,9 +402,7 @@ let rec PrintSexp = function
     | Quasiquote(sexpr) ->
         String.Format("Quasiquote({0})", PrintSexp sexpr)
     | Unquote(sexpr) ->
-        String.Format("Unquote({0})", [PrintSexp sexpr])
-    | Set(Cons(Atom(name), Cons(sexpr, NIL))) ->
-         String.Format("Set!({0}, {1})", name, PrintSexp sexpr)        
+        String.Format("Unquote({0})", [PrintSexp sexpr])     
     | Quote(sexpr) ->
         String.Format("Quote({0})", [PrintSexp sexpr])
     | Let_Star(bindings, sexpr) ->
@@ -417,8 +413,6 @@ let rec PrintSexp = function
         String.Format("Let({0}, {1})", 
             PrintSexp bindings, 
             List.map PrintSexp sexpr)
-    | If(Cons(condition, Cons(trueBr, Cons(falseBr, NIL)))) ->
-        String.Format("If({0}, {1}, {2})", PrintSexp condition, PrintSexp trueBr, PrintSexp falseBr)
     | Cons(head, tail) -> 
         String.Format("Cons({0}, {1})", PrintSexp head, PrintSexp tail)
     | Atom(name) -> String.Format("Atom({0})", name)                 
@@ -472,20 +466,12 @@ let rec ParseAst (env : Env) ast =
                 | _, _ -> 
                     // do regular stuff ...
                     Cons(WalkQuasiquote a, WalkQuasiquote b)
-            | If(ls) -> If(WalkQuasiquote ls)
-            // set!
-            // let*
-            // let
-            // define
-            // lambda
             // Return everything else as-is
             | x -> x
         WalkQuasiquote sexpr
     | Cons(Atom("begin"), ls) ->
-        //"Args to begin" |> Console.WriteLine
-        //PrintTree ls |> Console.WriteLine
         ls.ConsMap (ParseAst env) |> Last
-    | Set(args) ->
+    | Cons(Atom("set!"), args) ->
         match args with
         | Cons(id, Cons(sexpr, _)) ->
             match id with
@@ -580,10 +566,13 @@ let rec ParseAst (env : Env) ast =
                 ParseAst new_env body)
         | _ -> failwith "Invalid arguments to lambda!"
     // if
-    | If(Cons(_condition, Cons(_true_branch, Cons(_false_branch, NIL)))) ->
-        match ParseAst env _condition with
-        | False -> ParseAst env _false_branch
-        | _ -> ParseAst env _true_branch
+    | Cons(Atom("if"), args) ->
+        match args with
+        | Cons(_condition, Cons(_true_branch, Cons(_false_branch, NIL))) ->
+            match ParseAst env _condition with
+            | False -> ParseAst env _false_branch
+            | _ -> ParseAst env _true_branch
+        | _ -> failwith "Invalid args to if!"
     // Function application
     | Cons(_fn, _args) ->
         let _fn = ParseAst env _fn

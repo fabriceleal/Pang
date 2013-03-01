@@ -92,7 +92,7 @@ Lambda:
 	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Cons(Atom("lambda"), Cons($3, Cons($4, NIL))) }
 
 If:
-	| OPEN_PAREN IF ThreeSexpr CLOSE_PAREN	{ If($3) }
+	| OPEN_PAREN IF ThreeSexpr CLOSE_PAREN	{ Cons(Atom("if"), $3) }
 
 Define:
 	| OPEN_PAREN DEFINE Identifier Sexpr CLOSE_PAREN { Cons(Atom("define"), Cons($3, Cons($4, NIL))) }
@@ -119,7 +119,7 @@ Unquote:
 	| UNQUOTE Sexpr							{ Unquote($2) }
 
 Set:
-	| OPEN_PAREN SET Set_Scons CLOSE_PAREN			{ Set($3) }
+	| OPEN_PAREN SET Set_Scons CLOSE_PAREN			{ Cons(Atom("set!"), $3) }
 
 Begin:
 	| OPEN_PAREN BEGIN Sexpr_Consed CLOSE_PAREN		{ Cons(Atom("begin"), $3) }
