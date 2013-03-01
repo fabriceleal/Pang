@@ -275,7 +275,7 @@ let SysSub = SysArith "-" 0.0 (-);;
 
 let SysAdd = SysArith "+" 0.0 (+);;
 
-let SysEq (args : SObject) = 
+let ``Sys=`` (args : SObject) = 
     match args with
     | Cons(arg1, Cons(arg2, NIL)) ->
         match arg1, arg2 with
@@ -335,7 +335,7 @@ let CoreEnv newIn newOut =
       Put("list", Function(SysList)).
       Put("length", Function(SysLength)).
       Put("cons", Function(SysCons)).
-      Put("eq", Function(SysEq)).
+      Put("=", Function(``Sys=``)).
       Put("apply", Function(SysApply)).
       Put("map", Function(SysMap)).
       Put("null?", Function(``SysNull?``));;

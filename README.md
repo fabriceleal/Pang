@@ -3,11 +3,6 @@
 A subset of scheme, implemented in F#.
 Uses fslex and fsyacc.
 
-## Bugs / Missing
-
-* Identifiers à-là `|this is an identifier with whitespaces i n s i d e |`
-* More unknown stuff ...
-
 ## Supports
 
 * Quasiquotation
@@ -16,7 +11,13 @@ Uses fslex and fsyacc.
 
 ## Implemented
 
-`if`, `let`, `let*`, `lambda`, `quote`, `define`, `set!`, `define-macro`, `begin`
+### Binding constructs
+
+`let`, `let*`, `lambda`
+
+### ...
+
+`if`, `quote`, `define`, `set!`, `define-macro`, `begin`
 
 ## Functions implemented
 
@@ -34,7 +35,7 @@ Uses fslex and fsyacc.
 
 ### Comparison
 
-`eq`
+`=` for numbers
 
 ### Functional programming
 
@@ -56,3 +57,30 @@ match to_eval with
 | Cons(Atom("define"), stuff) -> ...
 ...
 ```
+
+## Bugs / Missing
+
+* Identifiers à-là `|this is an identifier with whitespaces i n s i d e |`
+* Not supporting `#!fold-case`, `#!no-fold-case`
+* Not supporting comments with `#;`. Only `;` or `#|` ... `|#`
+* Escaped chars in strings are the same as F#s
+* Character constants `\#c`
+* Vector constants `#(1 2 3)`
+* Bytevector constants `#u8(...)`
+* Used in numbers `#e` `#i` `#b` `#o` `#d` `#x`
+* Labeling data, like `#0#`, used for displaying circular structures
+* More unknown stuff ...
+* Type testing: `boolean?`, `bytevector?`, `char?`, `eof-object?`, `null?`, `number?`, `pair?`, `port?`, `procedure?`, `string?`, `symbol?`, `vector?`
+* `read`, `write`, `eval`
+* `lambda`s only work with a fixed number of args. Should work for variable and n or more variables (see spec 4.1.4)
+* `if` only works in the form consequent, alternate
+* `include`, `include-ci`
+* `cond`
+* `case`
+* `letrec`, `letrec*`, `let-values`, `let*-values`
+* `do`
+* Delayed evaluation: `delay`, `delay-force`, `force`, `promise?`, `make-promise`
+* Dynamic bindings: `make-parameter`, `parameterize`
+* Exceptions: `guard`, `raise`
+* `case-lambda`
+... stopped at 4.3.1

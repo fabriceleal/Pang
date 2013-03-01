@@ -71,17 +71,35 @@ printfn "Executing code ..."
 let pang = new Pang(null, null)
 //pang.ParseString "(display '(hello world))" |> ignore
 //pang.ParseString "(let ((x 10) (y (list 1 2 3))) (begin (display x) (display y)))" |> ignore
-pang.ParseString "(define-macro (unless condition true-return . body)
-                           `(if ,condition
-                                ,true-return
-                                (begin ,@body)))
-
-                        (begin (display '(hello world)) (display 'the-end))
-                        (unless #f nil (display '(hello world)) (display 'the-end))" |> ignore
+//pang.ParseString "(define-macro (unless condition true-return . body)
+//                           `(if ,condition
+//                                ,true-return
+//                                (begin ,@body)))
+//
+//                        (begin (display '(hello world)) (display 'the-end))
+//                        (unless #f nil (display '(hello world)) (display 'the-end))" |> ignore
 //pang.ParseString "(let* ((x 10) (y (+ x x))) (display y))" |> ignore
 //pang.ParseString "(display '(hello . (world . nil)))
 //                    (display '(hello world))
 //                    (display (list 'hello 'world))" |> ignore
+
+//pang.ParseString "
+//#|
+//    The FACT procedure computes the factorial
+//    of a non-negative integer.
+//|#
+//(define fact
+//    (lambda (n)
+//        (if (= n 0)
+//            ;(= n 1)
+//            1 ;Base case: return 1
+//            (* n (fact (- n 1))))))
+//(display (fact 4))
+//(display (fact 8))
+//(display (fact 15))
+//" |> ignore
+
+
 
 printfn "Press any key to continue..."
 System.Console.ReadLine() |> ignore

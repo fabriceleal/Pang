@@ -76,7 +76,7 @@ type Test_UnitTest1() =
     [<TestMethod>]
     member this.``Factorial test`` () =
         this.RunTest  "(define factorial (lambda (n)
-                                            (if (eq n 0)
+                                            (if (= n 0)
                                                 1
                                                 (* n (factorial (- n 1))))))
                        (display (factorial 5))" "120\r\n" |> ignore
