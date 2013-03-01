@@ -3,26 +3,10 @@
 A subset of scheme, implemented in F#.
 Uses fslex and fsyacc.
 
-## Bugs
+## Bugs / Missing
 
-I'm generating separate AST Objects for special forms, which I dont know if its
-the way to go. This means that this wouldnt work:
-
-```
-(eval `(,@(list 'if T T NIL)))
-```
-
-The way to go is to read EVERYTHING as lists and add special forms to the environment,
-as Syntax(_) objects. Or add a gigantic:
-
-```
-match to_eval with
-| Cons(Atom("if"), stuff) -> ...
-| Cons(Atom("define"), stuff) -> ...
-...
-```
-
-Which I get is better, if we dont want ifs or defines to be overridable :P
+* Identifiers à-là `|this is an identifier with whitespaces i n s i d e |`
+* More unknown stuff ...
 
 ## Supports
 
@@ -32,7 +16,7 @@ Which I get is better, if we dont want ifs or defines to be overridable :P
 
 ## Implemented
 
-`if`, `let`, `let*`, `lambda`, `quote`, `define`, `set!`
+`if`, `let`, `let*`, `lambda`, `quote`, `define`, `set!`, `define-macro`, `begin`
 
 ## Functions implemented
 
@@ -55,3 +39,20 @@ Which I get is better, if we dont want ifs or defines to be overridable :P
 ### Functional programming
 
 `apply`, `map`
+
+## Several Stuff
+
+I was generating separate AST Objects for special forms; this means that this wouldnt work:
+
+```
+(eval `(,@(list 'if T T NIL)))
+```
+
+Now I'm reading EVERYTHING as lists, and added a gigantic:
+
+```
+match to_eval with
+| Cons(Atom("if"), stuff) -> ...
+| Cons(Atom("define"), stuff) -> ...
+...
+```

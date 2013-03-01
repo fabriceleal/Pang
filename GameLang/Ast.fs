@@ -11,7 +11,6 @@ type SObject =
     | Unquote of SObject
     | UnquoteSplicing of SObject
     | Quote of SObject    
-    | Rest of string
     // Native Values
     | Syntax of SObject * SObject
     | Number of float    
@@ -371,7 +370,6 @@ let rec AppendForSplice (cons : SObject) (tail : SObject) =
 let rec PrintSexp = function  
     // Im too lazy ...
     | Syntax(_) -> "Syntax *"
-    | Rest(_) -> "Rest *"
     | UnquoteSplicing(sexpr) -> 
         String.Format(",@{0}", PrintSexp sexpr)
     // OK
