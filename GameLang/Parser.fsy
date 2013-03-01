@@ -98,7 +98,7 @@ Define:
 	| OPEN_PAREN DEFINE Identifier Sexpr CLOSE_PAREN { Cons(Atom("define"), Cons($3, Cons($4, NIL))) }
 
 Let:
-	| OPEN_PAREN LET OPEN_PAREN Let_Binding_Plus CLOSE_PAREN Sexpr_Plus CLOSE_PAREN	{ Let($4, $6) }
+	| OPEN_PAREN LET OPEN_PAREN Let_Binding_Plus CLOSE_PAREN Sexpr_Consed CLOSE_PAREN	{ Cons(Atom("let"), Cons($4, $6)) }
 
 Let_Star:
 	| OPEN_PAREN LET_STAR OPEN_PAREN Let_Binding_Plus CLOSE_PAREN Sexpr_Plus CLOSE_PAREN	{ Let_Star($4, $6) }

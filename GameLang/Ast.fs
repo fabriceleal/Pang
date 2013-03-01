@@ -11,7 +11,6 @@ type SObject =
     | Unquote of SObject
     | UnquoteSplicing of SObject
     | Let_Star of SObject * list<SObject>
-    | Let of SObject * list<SObject>
     | Quote of SObject    
     | Rest of string
     // Native Values
@@ -44,31 +43,21 @@ type SObject =
         | _ -> failwith "Only for literals and values!"
 
     member this.Map (f : SObject -> _) =
-        match this with
-        | Cons(something, NIL) -> [ f something ]
+        match this with        
         | Cons(something, tail) -> f something :: tail.Map f
         | NIL -> []
         | _ -> failwith "Only for cons lists!"
 
-//    member this.ConsZip (another : SObject) (f : SObject -> SObject -> _) =
-//        match this with
-//        | Cons(sth, NIL) -> 
-//            match another with
-//            | Cons(a_sth, _) -> Cons(f sth a_sth, NIL)
-//            | _ -> failwith "another is not a cons cell!"
-//        | Cons(sth, sth_tail) ->
-//            match another with
-//            | Cons(a_sth, t_sth) -> Cons(f sth a_sth, sth_tail.ConsZip t_sth f)
-//            | _ -> failwith "another is not a cons cell!"
-//        | NIL -> NIL
-//        | _ -> failwith "this is not a cons cell!"
+    member this.MapDiscard (f : SObject -> _) =
+        match this with
+        | Cons(something, tail) -> 
+            f something |> ignore 
+            tail.MapDiscard f
+        | NIL -> ignore()
+        | _ -> failwith "Only for cons lists!"
 
     member this.Zip (another : SObject) (f : SObject -> SObject -> _) =
         match this with
-        | Cons(sth, NIL) -> 
-            match another with
-            | Cons(a_sth, _) -> [f sth a_sth]
-            | _ -> failwith "another is not a cons cell!"
         | Cons(sth, sth_tail) ->
             match another with
             | Cons(a_sth, t_sth) -> f sth a_sth :: sth_tail.Zip t_sth f
@@ -77,23 +66,18 @@ type SObject =
         | _ -> failwith "this is not a cons cell!"
 
     member this.ZipDiscard (another : SObject) (f : SObject -> SObject -> _) =
-        match this with
-        | Cons(sth, NIL) -> 
-            match another with
-            | Cons(a_sth, _) -> f sth a_sth |> ignore
-            | _ -> failwith "another is not a cons cell!"
+        match this with       
         | Cons(sth, sth_tail) ->
             match another with
             | Cons(a_sth, t_sth) -> 
                 f sth a_sth |> ignore
-                sth_tail.ZipDiscard t_sth f |> ignore
+                sth_tail.ZipDiscard t_sth f
             | _ -> failwith "another is not a cons cell!"
         | NIL -> ignore()
         | _ -> failwith "this is not a cons cell!"
 
     member this.ConsMap (f : SObject -> SObject) =
         match this with
-        | Cons(something, NIL) -> Cons(f something, NIL)
         | Cons(something, tail) -> Cons(f something, tail.ConsMap f)
         | NIL -> NIL
         | _ -> failwith "Only for cons lists!";;
@@ -378,9 +362,13 @@ let CoreEnv newIn newOut =
       Put("null?", Function(``SysNull?``));;
 
 
+// this does not appends lists!
+// AppendCons (1 2 3) (4 5 6)
+// will return (1 2 3 (4 5 6))
 let rec AppendCons (cons : SObject) (tail : SObject) =
     match cons with
-    | Cons(h, NIL) -> Cons(h, Cons(tail, NIL))
+    | NIL -> Cons(tail, NIL)
+    | Cons(h, NIL) -> Cons(h, AppendCons NIL tail)
     | Cons(h, t) -> Cons(h, AppendCons t tail)
     | _ -> failwith "Unexpected object in AppendCons!";;
 
@@ -406,10 +394,6 @@ let rec PrintSexp = function
     | Quote(sexpr) ->
         String.Format("Quote({0})", [PrintSexp sexpr])
     | Let_Star(bindings, sexpr) ->
-        String.Format("Let({0}, {1})", 
-            PrintSexp bindings, 
-            List.map PrintSexp sexpr)
-    | Let(bindings, sexpr) ->
         String.Format("Let({0}, {1})", 
             PrintSexp bindings, 
             List.map PrintSexp sexpr)
@@ -469,18 +453,6 @@ let rec ParseAst (env : Env) ast =
             // Return everything else as-is
             | x -> x
         WalkQuasiquote sexpr
-    | Cons(Atom("begin"), ls) ->
-        ls.ConsMap (ParseAst env) |> Last
-    | Cons(Atom("set!"), args) ->
-        match args with
-        | Cons(id, Cons(sexpr, _)) ->
-            match id with
-            | Atom(name) -> 
-                let parsed = ParseAst env sexpr
-                env.Change(name, parsed) |> ignore
-                parsed
-            | _ -> failwith "Invalid set!"
-        | _ -> failwith "Invalid arguments to set!"
     | Quote(sexpr) -> sexpr
     | Let_Star(bindings, sexpr) ->
         let new_env = env.Wrap()
@@ -497,22 +469,43 @@ let rec ParseAst (env : Env) ast =
             | _ -> failwith "WTF???") |> ignore
         // Return last parsed element
         List.map (ParseAst new_env) sexpr |> List.rev |> List.head
-    | Let(bindings, sexpr) ->
-        //PrintTree bindings |> Console.Write
-        let new_env = env.Wrap()
-        bindings.ConsMap (
-            function
-            | Cons(Atom(name), Cons(value, NIL)) ->
-                // Parse and add bindings to new environment
-                let parsed = ParseAst env value
-                new_env.Put(name, parsed) |> ignore
+    //| Let(bindings, sexpr) ->
+    | Cons(Atom("let"), Cons(bindings, sexpr)) ->
+        // Create a lambda. let is a non-native special-form
+        // so we will implement it with simpler native forms
+
+        // First we need to split bindings into two lists:
+        // - one with the arguments' names
+        // - another with the actual values
+        let args = ref NIL
+        let values = ref NIL
+
+        bindings.MapDiscard (fun pair ->
+            match pair with
+            | Cons(id, Cons(value, NIL)) -> 
+                args := AppendCons !args id
+                values := AppendCons !values value
+            | _ -> failwith "Unexpected pair!"
+        ) |> ignore
+
+        // then we create a lambda cons list
+        let as_lambda = Cons(Atom("lambda"), Cons(!args, Cons(Cons(Atom("begin"), sexpr), NIL)))
+        // and the use it for a function application
+        let transformed = Cons(as_lambda, !values)        
+        // and then we parse it!
+        ParseAst env transformed
+    | Cons(Atom("begin"), ls) ->
+        ls.ConsMap (ParseAst env) |> Last
+    | Cons(Atom("set!"), args) ->
+        match args with
+        | Cons(id, Cons(sexpr, _)) ->
+            match id with
+            | Atom(name) -> 
+                let parsed = ParseAst env sexpr
+                env.Change(name, parsed) |> ignore
                 parsed
-            | _ -> failwith "WTF???") |> ignore
-        // Make a clean env before parsing sexpr
-        new_env.Wrap() |> ignore
-        // Parse; 
-        // Return last parsed element
-        List.map (ParseAst new_env) sexpr |> List.rev |> List.head
+            | _ -> failwith "Invalid set!"
+        | _ -> failwith "Invalid arguments to set!"
     | Cons(Atom("define-macro"), args) ->
         match args with
         | Cons(macro_args, Cons(body, NIL)) -> 
