@@ -138,15 +138,22 @@ let SysMap (args : SObject) =
         | _ -> failwith "Expecting a function!"
     | _ -> failwith "Expecting 2 arguments!";;
 
+// Write
 
-let ``SysNull?`` (args : SObject) =
+let SysWrite (args : SObject) = 
     match args with
-    | Cons(arg, NIL) ->
-        match arg with
-        | NIL -> True
-        | _ -> False
-    | _ -> failwith "Expecting 1 argument!";;
+    | Cons(to_write, NIL) ->
+        let to_display = to_write.ToString()
+        to_display |> Console.WriteLine
+        String(to_display)
+    | _ -> failwith "Expected 1 argument!";;
 
+
+let SysEval (args : SObject) = 
+    NIL;;
+
+
+// Read
 
 let SysRead (args : SObject) = 
     match args with
@@ -179,37 +186,89 @@ let SysReadLine (args : SObject) =
 // Type testing
 
 let ``SysBoolean?`` (args : SObject) =
-    False
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | False | True -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
+
 
 let ``SysChar``(args : SObject) =
-    False
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | Char(_) -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
+
 
 let ``SysPair?`` (args : SObject) =
-    False
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | Cons(_, _) -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
+
 
 let ``SysProcedure?`` (args : SObject) =
-    False
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | Function(_) -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
 
 let ``SysSymbol?`` (args : SObject) =
-    False
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | Atom(_) -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
+
 
 let ``SysByteVector?`` (args : SObject) =
-    False
+    False;;
+
 
 let ``SysEofObject?`` (args : SObject) =
-    False
+    False;;
+
 
 let ``SysNumber?`` (args : SObject) =
-    False
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | Number(_) -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
+
 
 let ``SysPort?`` (args : SObject) =
-    False
+    False;;
+
 
 let ``SysString?`` (args : SObject) =
-    False
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | String(_) -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
+
 
 let ``SysVector?`` (args : SObject) =
-    False
+    False;;
+
+let ``SysNull?`` (args : SObject) =
+    match args with
+    | Cons(arg, NIL) ->
+        match arg with
+        | NIL -> True
+        | _ -> False
+    | _ -> failwith "Expecting 1 argument!";;
 
 // Makes the core environment for our language
 let CoreEnv newIn newOut =
@@ -227,9 +286,22 @@ let CoreEnv newIn newOut =
       Put("=", Function(``Sys=``)).
       Put("apply", Function(SysApply)).
       Put("map", Function(SysMap)).
+      Put("write", Function(SysWrite)).
+      Put("eval", Function(SysEval)).
       Put("read", Function(SysRead)).
       Put("read-char", Function(SysReadChar)).
       Put("read-line", Function(SysReadLine)).
+      Put("boolean?", Function(``SysBoolean?``)).
+      Put("char?", Function(``SysChar``)).
+      Put("pair?", Function(``SysPair?``)).
+      Put("procedure?", Function(``SysProcedure?``)).
+      Put("symbol?", Function(``SysSymbol?``)).
+      Put("bytevector?", Function(``SysByteVector?``)).
+      Put("eof-object?", Function(``SysEofObject?``)).
+      Put("number?", Function(``SysNumber?``)).
+      Put("port?", Function(``SysPort?``)).
+      Put("string?", Function(``SysString?``)).
+      Put("vector?", Function(``SysVector?``)).
       Put("null?", Function(``SysNull?``));;
 
 
