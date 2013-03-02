@@ -1,6 +1,8 @@
 ﻿module Main
 
+open AstObject
 open Ast
+open Env
 
 open System
 open System.IO
@@ -15,13 +17,12 @@ type Pang =
 
     member this.ParseString (text : string) =
         // Read file
-        let tree = Parser.start Lexer.tokenstream (LexBuffer<char>.FromString text)
+        let tree = Parser.Start Lexer.tokenstream (LexBuffer<char>.FromString text)
         // Parse AST
         let results = List.map (ParseAst this.baseEnv) tree
         // Only return the result of the last expression
         List.rev results |> List.head
 ;;
-
 
 //
 //let test = ParseString "(define-macro (unless condition . body)
@@ -99,7 +100,7 @@ let pang = new Pang(null, null)
 //(display (fact 15))
 //" |> ignore
 
-
+SysRead(Cons(SObject.String("qwe"), NIL)) |> (fun x -> x.ToString()) |> Console.WriteLine
 
 printfn "Press any key to continue..."
 System.Console.ReadLine() |> ignore

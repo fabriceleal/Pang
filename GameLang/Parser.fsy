@@ -1,9 +1,11 @@
 ﻿%{
-open Ast
+open AstObject
 %}
 
-// The start token becomes a parser function in the compiled code:
-%start start
+// All tokens signaled with %start will become
+// functions in the parser object
+%start Start
+%start Sexpr
 
 // Regular tokens
 %token < string > IDENTIFIER
@@ -35,13 +37,14 @@ open Ast
 
 // This is the type of the data produced by a successful reduction of the 'start'
 // symbol:
-%type < Ast.SObject list > start
+%type < AstObject.SObject list > Start
+%type < AstObject.SObject > Sexpr
 
 %%
 
 // These are the rules of the grammar along with the F# code of the 
 // actions executed as rules are reduced.  
-start: File EOF						{ $1 }
+Start: File EOF						{ $1 }
 
 File:
 	| Sexpr_Plus					{ $1 }

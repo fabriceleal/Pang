@@ -13,9 +13,10 @@ type SObject =
     | Syntax of SObject * SObject
     | Number of float    
     | Function of (SObject -> SObject)
-    | Cons of SObject * SObject
+    | Cons of SObject * SObject    
     | Atom of string
     | String of string
+    | Char of char
     | NIL
     | True
     | False
@@ -34,6 +35,7 @@ type SObject =
         | Number(i) -> i.ToString()
         | Function(_) -> "<system function>"
         | String(s) -> String.Format("\"{0}\"", s)
+        | Char(c) -> String.Format("'{0}'", c)
         | NIL -> "NIL"
         | True -> "T"
         | _ -> failwith "Only for literals and values!"
