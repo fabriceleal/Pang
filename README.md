@@ -58,6 +58,12 @@ match to_eval with
 ...
 ```
 
+## TODOS
+
+* more and better tests
+* Compile as lib, so we can reuse for utilities, actual interpreter, tests, etc...
+* Bugs / Missing
+
 ## Bugs / Missing
 
 * Identifiers à-là `|this is an identifier with whitespaces i n s i d e |`
