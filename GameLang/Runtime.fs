@@ -223,10 +223,12 @@ let ``SysSymbol?`` (args : SObject) =
     | _ -> failwith "Expecting 1 argument!";;
 
 
+// TODO
 let ``SysByteVector?`` (args : SObject) =
     False;;
 
 
+// TODO
 let ``SysEofObject?`` (args : SObject) =
     False;;
 
@@ -240,6 +242,7 @@ let ``SysNumber?`` (args : SObject) =
     | _ -> failwith "Expecting 1 argument!";;
 
 
+// TODO
 let ``SysPort?`` (args : SObject) =
     False;;
 
@@ -253,8 +256,10 @@ let ``SysString?`` (args : SObject) =
     | _ -> failwith "Expecting 1 argument!";;
 
 
+// TODO
 let ``SysVector?`` (args : SObject) =
     False;;
+
 
 let ``SysNull?`` (args : SObject) =
     match args with
