@@ -101,7 +101,14 @@ let pang = new Pang(null, null)
 //(display (fact 15))
 //" |> ignore
 
-SysRead(Cons(SObject.String("qwe"), NIL)) |> (fun x -> x.ToString()) |> Console.WriteLine
+//SysRead(Cons(SObject.String("qwe"), NIL)) |> (fun x -> x.ToString()) |> Console.WriteLine
+
+pang.ParseString "
+
+(display \"Write something:\r\n\")
+(write (read))
+
+" |> ignore
 
 printfn "Press any key to continue..."
 System.Console.ReadLine() |> ignore

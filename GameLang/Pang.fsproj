@@ -51,7 +51,7 @@
     <Compile Include="Parser.fsi" />
     <Compile Include="Parser.fs" />
     <Compile Include="Lexer.fs" />
-    <Compile Include="Ast.fs" />
+    <Compile Include="Runtime.fs" />
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <None Include="Parser.fsy" />
