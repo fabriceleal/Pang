@@ -3,6 +3,7 @@
 open AstObject
 open Ast
 open Env
+open ParseAst
 
 open System
 open System.IO

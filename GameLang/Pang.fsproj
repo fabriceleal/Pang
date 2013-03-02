@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="AstObject.fs" />
     <Compile Include="Env.fs" />
+    <Compile Include="ParseAst.fs" />
     <Compile Include="Parser.fsi" />
     <Compile Include="Parser.fs" />
     <Compile Include="Lexer.fs" />
