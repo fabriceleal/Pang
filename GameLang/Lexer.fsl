@@ -55,9 +55,9 @@ rule tokenstream = parse
 | quote_single			{ Parser.QUOTE }
 | quasiquote			{ Parser.QUASIQUOTE }
 | unquote				{ Parser.UNQUOTE }
-| id					{ Parser.IDENTIFIER(LexBuffer.LexemeString lexbuf) }
 | ['-']?digit+								 { Parser.NUMBER(Double.Parse(LexBuffer.LexemeString lexbuf)) }
 | ['-']?digit+('.'digit+)?(['e''E']digit+)?  { Parser.NUMBER(Double.Parse(LexBuffer.LexemeString lexbuf)) }
+| id					{ Parser.IDENTIFIER(LexBuffer.LexemeString lexbuf) }
 | quote_char notquote_char* quote_char { let str = LexBuffer.LexemeString lexbuf in Parser.STRING(str.Substring(1, str.Length - 2)) }
 // --------------------------
 | comment_start	{ inside_comment lexbuf }
