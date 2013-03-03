@@ -16,13 +16,21 @@ type Pang =
     val baseEnv : Env
     new (input : TextReader, output : TextWriter) = { baseEnv = CoreEnv input output; }
 
-    member this.ParseString (text : string) =
+//    member this.ParseString (text : string) =
+//        // Read file
+//        let tree = Parser.Start Lexer.tokenstream (LexBuffer<char>.FromString text)
+//        // Parse AST
+//        let results = List.map (ParseAst this.baseEnv) tree
+//        // Only return the result of the last expression
+//        List.rev results |> List.head
+
+    member this.ParseStringCPS (text : string) =
         // Read file
         let tree = Parser.Start Lexer.tokenstream (LexBuffer<char>.FromString text)
         // Parse AST
-        let results = List.map (ParseAst this.baseEnv) tree
-        // Only return the result of the last expression
-        List.rev results |> List.head
+        for e in tree do
+            ParseAstCPS this.baseEnv e (fun x -> x.ToString() |> printfn "TOP KONT: %s")
+
 ;;
 
 //
@@ -103,12 +111,23 @@ let pang = new Pang(null, null)
 
 //SysRead(Cons(SObject.String("qwe"), NIL)) |> (fun x -> x.ToString()) |> Console.WriteLine
 
-pang.ParseString "
+//pang.ParseString "
+//
+//(display \"Write something:\r\n\")
+//(write (read))
+//
+//" |> ignore
 
-(display \"Write something:\r\n\")
-(write (read))
+pang.ParseStringCPS "
+(if #t #f #t)
+"
 
-" |> ignore
+pang.ParseStringCPS "
+(let ((x 10) (y 20) (z 30))
+    (display x)
+    (display y)
+    (display z))
+"
 
 printfn "Press any key to continue..."
 System.Console.ReadLine() |> ignore

@@ -12,7 +12,7 @@ type SObject =
     // Native Values
     | Syntax of SObject * SObject
     | Number of float    
-    | Function of (SObject -> SObject)
+    | Function_CPS of (SObject -> (SObject -> unit) -> unit)
     | Cons of SObject * SObject    
     | Atom of string
     | String of string
@@ -33,11 +33,12 @@ type SObject =
         // Scalar types
         | Atom(s) -> s
         | Number(i) -> i.ToString()
-        | Function(_) -> "<system function>"
+        | Function_CPS(_) -> "<system function>"
         | String(s) -> String.Format("\"{0}\"", s)
         | Char(c) -> String.Format("'{0}'", c)
         | NIL -> "NIL"
-        | True -> "T"
+        | True -> "#T"
+        | False -> "#F"
         | _ -> failwith "Only for literals and values!"
 
     member this.Map (f : SObject -> _) =
