@@ -2,6 +2,31 @@
 
 open AstObject
 open Env
+open System
+
+// Let this fail if arguments are invalid
+let rec PrintSexp = function  
+    // Im too lazy ...
+    | Syntax(_) -> "Syntax *"
+    | UnquoteSplicing(sexpr) -> 
+        String.Format(",@{0}", PrintSexp sexpr)
+    // OK
+    | Quasiquote(sexpr) ->
+        String.Format("`{0}", PrintSexp sexpr)
+    | Unquote(sexpr) ->
+        String.Format(",{0}", PrintSexp sexpr)     
+    | Quote(sexpr) ->
+        String.Format("'{0}", PrintSexp sexpr)
+    | Cons(head, tail) -> 
+        String.Format("Cons({0}, {1})", PrintSexp head, PrintSexp tail)
+    | Atom(name) -> String.Format("<{0}>", name)                 
+    | Number(n) -> String.Format("{0}", n)
+    | String(s) -> String.Format("\"{0}\"", s)
+    | Function_CPS(_) -> "<Function>"
+    | Char(c) -> String.Format("'{0}'", c)
+    | True -> "#True"
+    | False -> "#False"
+    | NIL -> "NIL";; 
 
 
 let rec Last = 
@@ -384,6 +409,12 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
     | Cons(Atom("define"), args) ->
         // Special form define
         match args with
+        // ABREV. LAMBDA FORM
+        | Cons(Cons(fun_name, fun_args), body) ->
+            // transform this into a (define fun_name (lambda fun_args body))
+            let transf = Cons(Atom("define"), Cons(fun_name, Cons(Cons(Atom("lambda"), Cons(fun_args, body)), NIL)))
+            ParseAstCPS env transf (fun x -> kont x)
+        // GENERAL FORM
         | Cons(identifier, Cons(exp, NIL)) ->
             match identifier with
             | Atom(name) ->
@@ -431,8 +462,8 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             )
         | _ -> failwith "Invalid args to if!"
     // Function application
-    | Cons(_fn, _args) ->
-        ParseAstCPS env _fn (fun _fn -> 
+    | Cons(_head, _args) ->
+        ParseAstCPS env _head (fun _fn -> 
 
             match _fn with
             | Function_CPS(native) ->

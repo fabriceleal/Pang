@@ -8,11 +8,11 @@ open Env
 open ParseAst
 open Microsoft.FSharp.Text.Lexing
 
-//// 
-//// We already receive the arguments as a cons list,
-//// just return the arguments :)
-//let SysList (args: SObject) : SObject =
-//    args;;
+
+// We already receive the arguments as a cons list,
+// just return the arguments :)
+let SysList (args: SObject) (k : SObject -> unit) =
+    k args;;
 //
 //
 //let SysCons (args: SObject) : SObject =
@@ -284,8 +284,9 @@ let CoreEnv newIn newOut =
       Put("cdr", Function_CPS(SysCdr)).
       Put("=", Function_CPS(``Sys=``)).
       Put("-", Function_CPS(SysSub)).
-      Put("*", Function_CPS(SysMult))
-        
+      Put("*", Function_CPS(SysMult)).
+      Put("list", Function_CPS(SysList))
+
 
 //      Put("+", Function(SysAdd)).
 //      Put("*", Function(SysMult)).
@@ -318,30 +319,6 @@ let CoreEnv newIn newOut =
 //      Put("null?", Function(``SysNull?``))
       ;;
 
-
-// Let this fail if arguments are invalid
-let rec PrintSexp = function  
-    // Im too lazy ...
-    | Syntax(_) -> "Syntax *"
-    | UnquoteSplicing(sexpr) -> 
-        String.Format(",@{0}", PrintSexp sexpr)
-    // OK
-    | Quasiquote(sexpr) ->
-        String.Format("`{0}", PrintSexp sexpr)
-    | Unquote(sexpr) ->
-        String.Format(",{0}", PrintSexp sexpr)     
-    | Quote(sexpr) ->
-        String.Format("'{0}", PrintSexp sexpr)
-    | Cons(head, tail) -> 
-        String.Format("Cons({0}, {1})", PrintSexp head, PrintSexp tail)
-    | Atom(name) -> String.Format("<{0}>", name)                 
-    | Number(n) -> String.Format("{0}", n)
-    | String(s) -> String.Format("\"{0}\"", s)
-    | Function_CPS(_) -> "<Function>"
-    | Char(c) -> String.Format("'{0}'", c)
-    | True -> "#True"
-    | False -> "#False"
-    | NIL -> "NIL";; 
 
 
 let PrintTree tree = 

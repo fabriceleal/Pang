@@ -29,7 +29,7 @@ type Pang =
         let tree = Parser.Start Lexer.tokenstream (LexBuffer<char>.FromString text)
         // Parse AST
         for e in tree do
-            ParseAstCPS this.baseEnv e (fun x -> x.ToString() |> printfn "TOP KONT: %s")
+            ParseAstCPS this.baseEnv e (fun x -> PrintSexp x |> printfn "TOP KONT: %s")
 
 ;;
 
@@ -118,37 +118,73 @@ let pang = new Pang(null, null)
 //
 //" |> ignore
 
-pang.ParseStringCPS "
-(if #t #f #t)
-"
+//pang.ParseStringCPS "
+//(if #t #f #t)
+//"
+//
+//pang.ParseStringCPS "
+//(let ((x 10) (y 20) (z 30))
+//    (display x)
+//    (display y)
+//    (display z))
+//"
+//
+//pang.ParseStringCPS "
+//(display (length '()))
+//(display (length '(1)))
+//(display (length '(1 2 3)))
+//"
+//
+//pang.ParseStringCPS "
+//(define factorial (lambda (n)
+//                    (if (= n 0)
+//                        1
+//                        (* n (factorial (- n 1))))))
+//(display (factorial 5))
+//(display (factorial 8))
+//"
+//
+//pang.ParseStringCPS "
+//(let* ((x 1) (y (* x 2)) (z (- y -2)))
+//    (display x)
+//    (display y)
+//    (display z))
+//"
+//
+//pang.ParseStringCPS "
+//(let* ((x 'hello) (y 'world) (z `(i will print ,x ,y)))
+//    (display x)
+//    (display y)
+//    (display z))
+//"
+
+//pang.ParseStringCPS "
+//(let* ((x 'hello) (y 'world) (z `(i will print ,x ,y)) )
+//    (display x)
+//    (display y)
+//    (display z)
+//    (display (display z)))
+//"
+
+//pang.ParseStringCPS "
+//(define-macro (unless condition true-return . body)
+//    `(if ,condition
+//        ,true-return
+//        (begin ,@body)))
+//
+//(begin (display '(hello world)) (display 'the-end))
+//(unless #f nil (display '(hello world)) (display 'the-end))"
 
 pang.ParseStringCPS "
-(let ((x 10) (y 20) (z 30))
-    (display x)
-    (display y)
-    (display z))
-"
-
-pang.ParseStringCPS "
-(display (length '()))
-(display (length '(1)))
-(display (length '(1 2 3)))
-"
-
-pang.ParseStringCPS "
-(define factorial (lambda (n)
-                    (if (= n 0)
-                        1
-                        (* n (factorial (- n 1))))))
+(define (factorial n)
+            (if (= n 0)
+                1
+                (* n (factorial (- n 1))
+                ) 
+            )
+)
 (display (factorial 5))
 (display (factorial 8))
-"
-
-pang.ParseStringCPS "
-(let* ((x 1) (y (* x 2)) (z (- y -2)))
-    (display x)
-    (display y)
-    (display z))
 "
 
 printfn "Press any key to continue..."
