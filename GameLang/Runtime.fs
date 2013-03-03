@@ -22,38 +22,39 @@ open Microsoft.FSharp.Text.Lexing
 //    | _ -> failwith "cons expects two arguments!";;
 //
 //
-//let rec SysLength (args: SObject) : SObject =
-//    match args with
-//    | Cons(to_length, NIL) ->
-//        match to_length with
-//        | NIL -> Number(0.0)
-//        | Cons(_, tail) ->
-//            // We need to wrap the argument in another cons
-//            match SysLength(Cons(tail, NIL)) with
-//            | Number(i) -> Number(1.0 + i)
-//            | _ -> failwith "length should return number!"
-//        | _ -> failwith "length expects a cons cell or nil!"
-//    | _ -> failwith "length expects one argument!";;
-//
-//
-//let SysCar (args: SObject) : SObject =
-//    match args with
-//    | Cons(to_car, NIL) ->
-//        match to_car with
-//        | Cons(car, _) -> car
-//        | _ -> failwith "car expects a cons cell!"
-//    | _ -> failwith "car expects one argument!";;
-//
-//
-//let SysCdr (args: SObject) : SObject =
-//    match args with
-//    | Cons(to_cdr, NIL) ->
-//        match to_cdr with
-//        | Cons(_, cdr) -> cdr
-//        | _ -> failwith "cdr expects a cons cell!"
-//    | _ -> failwith "cdr expects one argument!";;
-//
-//
+let rec SysLength (args: SObject) (k : SObject -> unit) =
+    match args with
+    | Cons(to_length, NIL) ->
+        match to_length with
+        | NIL -> Number(0.0) |> k
+        | Cons(_, tail) ->
+            // We need to wrap the argument in another cons
+            SysLength (Cons(tail, NIL)) (fun ret -> 
+                match ret with
+                | Number(i) -> k(Number(1.0 + i))
+                | _ -> failwith "length should return number!")            
+        | _ -> failwith "length expects a cons cell or nil!"
+    | _ -> failwith "length expects one argument!";;
+
+
+let SysCar (args: SObject) (k : SObject -> unit) =
+    match args with
+    | Cons(to_car, NIL) ->
+        match to_car with
+        | Cons(car, _) -> k(car)
+        | _ -> failwith "car expects a cons cell!"
+    | _ -> failwith "car expects one argument!";;
+
+
+let SysCdr (args: SObject) (k : SObject -> unit) =
+    match args with
+    | Cons(to_cdr, NIL) ->
+        match to_cdr with
+        | Cons(_, cdr) -> k(cdr)
+        | _ -> failwith "cdr expects a cons cell!"
+    | _ -> failwith "cdr expects one argument!";;
+
+
 // The Console.Out property is changed only once this
 // is called. You can overide it as you want
 let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> (SObject -> unit) -> unit = 
@@ -75,40 +76,42 @@ let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> (SObject -> unit) -
 //
 //// This does not evaluate exactly 
 //// like common lisp
-//let SysArith (name : String) (nullelement : float) (func : float -> float -> float) (args: SObject) : SObject =
-//    let rec __SysArith (args: SObject) = 
-//        match args with
-//        | Cons(NIL, NIL) ->
-//            Number(nullelement)
-//        | Cons(Number(add1), NIL) ->
-//            Number(add1)        
-//        | Cons(Number(add1), tail) -> 
-//            match __SysArith tail with
-//            | Number(v) -> Number(func add1 v)
-//            | _ ->  failwith ("Invalid return of " + name)
-//        | _ -> failwith ("Invalid arguments to " + name)
-//    
-//    __SysArith args;;
+let SysArith (name : String) (nullelement : float) (func : float -> float -> float) (args: SObject) =
+    let rec __SysArith (args: SObject) (k : SObject -> unit) = 
+        match args with
+        | Cons(NIL, NIL) ->
+            Number(nullelement) |> k
+        | Cons(Number(add1), NIL) ->
+            Number(add1) |> k
+        | Cons(Number(add1), tail) -> 
+            __SysArith tail (fun t -> 
+                match t with
+                | Number(v) -> Number(func add1 v) |> k
+                | _ ->  failwith ("Invalid return of " + name))
+            
+        | _ -> failwith ("Invalid arguments to " + name)
+    
+    __SysArith args;;
 //
 //let SysDiv = SysArith "/" 1.0 (/);;
-//
-//let SysMult = SysArith "*" 1.0 (*);;
-//
-//let SysSub = SysArith "-" 0.0 (-);;
+
+let SysMult = SysArith "*" 1.0 (*);;
+
+let SysSub = SysArith "-" 0.0 (-);;
 //
 //let SysAdd = SysArith "+" 0.0 (+);;
-//
-//
-//let ``Sys=`` (args : SObject) = 
-//    match args with
-//    | Cons(arg1, Cons(arg2, NIL)) ->
-//        match arg1, arg2 with
-//        | Number(i1), Number(i2) when i1 = i2 -> True
-//        | String(s1), String(s2) when s1 = s2 -> True
-//        | Atom(a1), Atom(a2) when a1 = a2 -> True
-//        // TODO put here more stuff!
-//        | _, _ -> False
-//    | _ -> failwith "Expecting 2 arguments!";;
+
+
+let ``Sys=`` (args : SObject) (k : SObject -> unit) = 
+    match args with
+    | Cons(arg1, Cons(arg2, NIL)) ->
+        match arg1, arg2 with
+        | Number(i1), Number(i2) when i1 = i2 -> k(True)
+        | String(s1), String(s2) when s1 = s2 -> k(True)
+        | Atom(a1), Atom(a2) when a1 = a2 -> k(True)
+        // TODO put here more stuff!
+        | _, _ -> k(False)
+    | _ -> failwith "Expecting 2 arguments!";;
 //
 //
 //let SysApply (args : SObject) =
@@ -275,9 +278,15 @@ let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> (SObject -> unit) -
 // Makes the core environment for our language
 let CoreEnv newIn newOut =
     let e = new Env();
-    e.Put("display", Function_CPS(MakeSysDisplay newOut))
+    e.Put("display", Function_CPS(MakeSysDisplay newOut)).
+      Put("length", Function_CPS(SysLength)).
+      Put("car", Function_CPS(SysCar)).
+      Put("cdr", Function_CPS(SysCdr)).
+      Put("=", Function_CPS(``Sys=``)).
+      Put("-", Function_CPS(SysSub)).
+      Put("*", Function_CPS(SysMult))
+        
 
-//    e.Put("display", Function(MakeSysDisplay newOut)).
 //      Put("+", Function(SysAdd)).
 //      Put("*", Function(SysMult)).
 //      Put("-", Function(SysSub)).
@@ -285,7 +294,7 @@ let CoreEnv newIn newOut =
 //      Put("car", Function(SysCar)).
 //      Put("cdr", Function(SysCdr)).
 //      Put("list", Function(SysList)).
-//      Put("length", Function(SysLength)).
+//      .
 //      Put("cons", Function(SysCons)).
 //      Put("=", Function(``Sys=``)).
 //      Put("apply", Function(SysApply)).

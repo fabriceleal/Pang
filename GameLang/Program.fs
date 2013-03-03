@@ -129,6 +129,28 @@ pang.ParseStringCPS "
     (display z))
 "
 
+pang.ParseStringCPS "
+(display (length '()))
+(display (length '(1)))
+(display (length '(1 2 3)))
+"
+
+pang.ParseStringCPS "
+(define factorial (lambda (n)
+                    (if (= n 0)
+                        1
+                        (* n (factorial (- n 1))))))
+(display (factorial 5))
+(display (factorial 8))
+"
+
+pang.ParseStringCPS "
+(let* ((x 1) (y (* x 2)) (z (- y -2)))
+    (display x)
+    (display y)
+    (display z))
+"
+
 printfn "Press any key to continue..."
 System.Console.ReadLine() |> ignore
 
