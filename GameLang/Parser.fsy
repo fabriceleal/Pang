@@ -88,14 +88,14 @@ List_of_Identifiers:
 	| OPEN_PAREN Atom_Consed CLOSE_PAREN	{ $2 }
 
 Lambda:
-	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr CLOSE_PAREN { Cons(Atom("lambda"), Cons($3, Cons($4, NIL))) }
+	| OPEN_PAREN LAMBDA List_of_Identifiers Sexpr_Consed CLOSE_PAREN { Cons(Atom("lambda"), Cons($3, Cons($4, NIL))) }
 
 If:
 	| OPEN_PAREN IF ThreeSexpr CLOSE_PAREN	{ Cons(Atom("if"), $3) }
 
 Define:
 	| OPEN_PAREN DEFINE Identifier Sexpr CLOSE_PAREN { Cons(Atom("define"), Cons($3, Cons($4, NIL))) }
-	| OPEN_PAREN DEFINE OPEN_PAREN Id_Consed CLOSE_PAREN Sexpr CLOSE_PAREN { Cons(Atom("define"), Cons($4, Cons($6, NIL))) }
+	| OPEN_PAREN DEFINE OPEN_PAREN Id_Consed CLOSE_PAREN Sexpr CLOSE_PAREN { Cons(Atom("define"), Cons($4, Cons(Cons(Atom("begin"), $6), NIL))) }
 
 Let:
 	| OPEN_PAREN LET OPEN_PAREN Let_Binding_Plus CLOSE_PAREN Sexpr_Consed CLOSE_PAREN	{ Cons(Atom("let"), Cons($4, $6)) }

@@ -67,7 +67,7 @@ let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> (SObject -> unit) -
         match args with
         | Cons(to_display, NIL) ->
             let displayed = to_display.ToString()
-            Console.WriteLine "Writing ..." 
+            //Console.WriteLine "Writing ..." 
             Console.WriteLine displayed
             String(displayed) |> k
         | _ -> failwith "display expects one argument!"
@@ -98,8 +98,8 @@ let SysArith (name : String) (nullelement : float) (func : float -> float -> flo
 let SysMult = SysArith "*" 1.0 (*);;
 
 let SysSub = SysArith "-" 0.0 (-);;
-//
-//let SysAdd = SysArith "+" 0.0 (+);;
+
+let SysAdd = SysArith "+" 0.0 (+);;
 
 
 let ``Sys=`` (args : SObject) (k : SObject -> unit) = 
@@ -308,6 +308,7 @@ let CoreEnv newIn newOut =
       Put("=", Function_CPS(``Sys=``)).
       Put("-", Function_CPS(SysSub)).
       Put("*", Function_CPS(SysMult)).
+      Put("+", Function_CPS(SysAdd)).
       Put("list", Function_CPS(SysList)).
       Put("call/cc", Function_CPS(SysCallCC))
 

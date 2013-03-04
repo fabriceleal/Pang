@@ -28,14 +28,14 @@ type EnvImpl =
     member this.Wrap() =
         new EnvImpl(this)
 
-    member this.Copy() =
-        // We are cloning only the dictionary, not the values
-        // if there are SObjects with mutating state, we need to
-        // clone them too
-        match this.inner with
-        | None -> new EnvImpl(None, new Dictionary<string, SObject>(this.dict))
-        | Some(env) ->
-            new EnvImpl(Some(env.Copy()), new Dictionary<string, SObject>(this.dict))
+//    member this.Copy() =
+//        // We are cloning only the dictionary, not the values
+//        // if there are SObjects with mutating state, we need to
+//        // clone them too
+//        match this.inner with
+//        | None -> new EnvImpl(None, new Dictionary<string, SObject>(this.dict))
+//        | Some(env) ->
+//            new EnvImpl(Some(env.Copy()), new Dictionary<string, SObject>(this.dict))
 
     // Call this when exiting a scope (if necessary)
     member this.Unwrap() =
@@ -65,9 +65,12 @@ type EnvImpl =
     member this.Change(key, new_value) =
         if this.dict.ContainsKey(key) then
             this.dict.[key] <- new_value
+            this
         else
-            failwith "You can't change something that doesnt exist!"
-        this;;
+            match this.inner with
+            | Some(env) -> env.Change(key, new_value)
+            | None -> failwith "You can't change something that doesnt exist!"
+        ;;
 
 // Environment
 type Env = 
@@ -84,8 +87,8 @@ type Env =
         this.e <- this.e.Wrap()
         this
 
-    member this.Copy() = 
-        new Env(this.e.Copy())
+//    member this.Copy() = 
+//        new Env(this.e.Copy())
 
     member this.Unwrap() =
         this.e <- this.e.Unwrap()

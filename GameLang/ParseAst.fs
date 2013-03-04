@@ -437,17 +437,14 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             kont (Function_CPS(fun x k ->
                 // x holds already evaled arguments
                 // create a new environment
-
-                // we copy the captured environment
-                // to avoid the need to UnWrap() and
-                // to allow reentrant functions
-                let new_env = env_for_fun.Copy().Wrap()
+                                
+                let new_env = env_for_fun.Wrap()
                 arguments.ZipDiscard x (fun name sexpr -> 
                     match name with
                     | Atom(name) -> new_env.Put(name, sexpr) |> ignore
                                     sexpr
                     | _ -> failwith "Invalid argument!")
-                // Parse body with the new environment
+                // Parse body with the new environment                
                 ParseAstCPS new_env body (fun res -> k(res))))
         | _ -> failwith "Invalid arguments to lambda!"
     | Cons(Atom("if"), args) ->
@@ -471,7 +468,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
                 let rec parseArgsThenFunction args acc = 
                     match args with
                     | NIL ->
-                        acc.ToString() |> printfn "ARGUMENTS TO FUNCTION: %s"
+                        //acc.ToString() |> printfn "ARGUMENTS TO FUNCTION: %s"
                         native acc kont |> ignore
                     | Cons(h, tail) ->
                         ParseAstCPS env h (fun h -> parseArgsThenFunction tail (AppendCons acc h))
@@ -482,7 +479,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             | Syntax(args, body) ->
                 // Create new env., 
                 // bind *unparsed* arguments
-                let new_env = env.Copy().Wrap()
+                let new_env = env.Wrap()
             
                 let rec parseMacroArgs args pars =
                     // args contains the names of the vars 

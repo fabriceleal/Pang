@@ -13,8 +13,9 @@ open Microsoft.FSharp.Text.Lexing
 //    Parser.start Lexer.tokenstream (LexBuffer<char>.FromString text)
 
 type Pang = 
-    val baseEnv : Env
-    new (input : TextReader, output : TextWriter) = { baseEnv = CoreEnv input output; }
+    val input : TextReader
+    val output : TextWriter
+    new (input : TextReader, output : TextWriter) = { input = input; output = output; }
 
 //    member this.ParseString (text : string) =
 //        // Read file
@@ -25,11 +26,12 @@ type Pang =
 //        List.rev results |> List.head
 
     member this.ParseStringCPS (text : string) =
+        let baseEnv = CoreEnv this.input this.output;
         // Read file
         let tree = Parser.Start Lexer.tokenstream (LexBuffer<char>.FromString text)
         // Parse AST
         for e in tree do
-            ParseAstCPS this.baseEnv e (fun x -> PrintSexp x |> printfn "TOP KONT: %s")
+            ParseAstCPS baseEnv e (fun x -> ignore())
 
 ;;
 
@@ -187,9 +189,32 @@ let pang = new Pang(null, null)
 //(display (factorial 8))
 //"
 
+//pang.ParseStringCPS "
+//
+//(display (- 1 (call/cc (lambda (return) (begin 1 (return 2) 3)))))
+//
+//"
+//
+//pang.ParseStringCPS "
+//
+//(define return #f) 
+//  
+//(display (+ 1 (call/cc 
+//        (lambda (cont) 
+//          (set! return cont) 
+//          1))))
+//
+//(display (return 22))
+//
+//"
+
 pang.ParseStringCPS "
 
-(display (- 1 (call/cc (lambda (return) (begin 1 (return 2) 3)))))
+(let* ((yin
+         ((lambda (cc) (display \"@\") cc) (call/cc (lambda (c) c))))
+       (yang
+         ((lambda (cc) (display \"*\") cc) (call/cc (lambda (c) c)))))
+    (yin yang))
 
 "
 
