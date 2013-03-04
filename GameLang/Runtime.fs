@@ -275,6 +275,29 @@ let ``Sys=`` (args : SObject) (k : SObject -> unit) =
 //        | _ -> False
 //    | _ -> failwith "Expecting 1 argument!";;
 
+let SysCallCC (args : SObject) (kont : SObject -> unit) =
+    match args with
+    | Cons(fn, NIL) -> 
+        match fn with
+        | Function_CPS(the_cc) ->
+            // This will only be called if we call the 
+            // passed continuation, and will halt the execution of 
+            // the rest!
+            let kont_wrapper = Cons(Function_CPS(fun a _ -> 
+                match a with
+                | Cons(value, NIL) -> kont value
+                | _ -> failwith "Expected 1 argument!"), NIL)
+
+            // This will only be called if we DONT call the 
+            // passed continuation
+            the_cc kont_wrapper (fun a -> 
+                match a with
+                | Cons(value, NIL) -> kont value
+                | _ -> failwith "Expected 1 argument!"
+            )
+        | _ -> failwith "Expected a function!"
+    | _ -> failwith "Expected 1 argument!"
+
 // Makes the core environment for our language
 let CoreEnv newIn newOut =
     let e = new Env();
@@ -285,7 +308,8 @@ let CoreEnv newIn newOut =
       Put("=", Function_CPS(``Sys=``)).
       Put("-", Function_CPS(SysSub)).
       Put("*", Function_CPS(SysMult)).
-      Put("list", Function_CPS(SysList))
+      Put("list", Function_CPS(SysList)).
+      Put("call/cc", Function_CPS(SysCallCC))
 
 
 //      Put("+", Function(SysAdd)).

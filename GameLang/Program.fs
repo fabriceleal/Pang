@@ -175,16 +175,22 @@ let pang = new Pang(null, null)
 //(begin (display '(hello world)) (display 'the-end))
 //(unless #f nil (display '(hello world)) (display 'the-end))"
 
+//pang.ParseStringCPS "
+//(define (factorial n)
+//            (if (= n 0)
+//                1
+//                (* n (factorial (- n 1))
+//                ) 
+//            )
+//)
+//(display (factorial 5))
+//(display (factorial 8))
+//"
+
 pang.ParseStringCPS "
-(define (factorial n)
-            (if (= n 0)
-                1
-                (* n (factorial (- n 1))
-                ) 
-            )
-)
-(display (factorial 5))
-(display (factorial 8))
+
+(display (- 1 (call/cc (lambda (return) (begin 1 (return 2) 3)))))
+
 "
 
 printfn "Press any key to continue..."
