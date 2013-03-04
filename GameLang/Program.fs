@@ -194,15 +194,21 @@ let pang = new Pang(null, null)
 //(display (- 1 (call/cc (lambda (return) (begin 1 (return 2) 3)))))
 //
 //"
+
+//pang.ParseStringCPS "
 //
+//(display (begin 1 2 3))
+//
+//"
+
 //pang.ParseStringCPS "
 //
 //(define return #f) 
 //  
 //(display (+ 1 (call/cc 
 //        (lambda (cont) 
-//          (set! return cont) 
-//          1))))
+//            (set! return cont) 
+//            1))))
 //
 //(display (return 22))
 //
