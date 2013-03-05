@@ -290,9 +290,7 @@ let SysCallCC (args : SObject) (kont : SObject -> unit) =
 
             // This will only be called if we DONT call the 
             // passed continuation
-            the_cc kont_wrapper (fun a -> 
-                kont a
-            )
+            the_cc kont_wrapper kont
         | _ -> failwith "Expected a function!"
     | _ -> failwith "Expected 1 argument!"
 

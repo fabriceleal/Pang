@@ -86,6 +86,7 @@ type SObject =
 // this does not appends lists!
 // AppendCons (1 2 3) (4 5 6)
 // will return (1 2 3 (4 5 6))
+[<System.Diagnostics.DebuggerStepThroughAttribute()>]
 let rec AppendCons (cons : SObject) (tail : SObject) =
     match cons with
     | NIL -> Cons(tail, NIL)
@@ -94,6 +95,7 @@ let rec AppendCons (cons : SObject) (tail : SObject) =
     | _ -> failwith "Unexpected object in AppendCons!";;
 
 
+[<System.Diagnostics.DebuggerStepThroughAttribute()>]
 let rec SetCdrOfLast (cons : SObject) (newcdr : SObject) =
     match cons with
     | Cons(h, NIL) -> Cons(h, newcdr)

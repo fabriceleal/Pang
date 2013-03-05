@@ -10,6 +10,7 @@ open AstObject
 // Regular tokens
 %token < string > IDENTIFIER
 %token < string > STRING
+%token < char > CHAR
 %token < double > NUMBER
 %token OPEN_PAREN
 %token CLOSE_PAREN

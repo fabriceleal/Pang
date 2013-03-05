@@ -214,14 +214,22 @@ let pang = new Pang(null, null)
 //
 //"
 
+//pang.ParseStringCPS "
+//
+//(let* ((yin
+//         ((lambda (cc) (begin (display \"@\") cc)) (call/cc (lambda (c) c))))
+//       (yang
+//         ((lambda (cc) (begin (display \"*\") cc)) (call/cc (lambda (c) c)))))
+//    (yin yang))
+//
+//"
+
 pang.ParseStringCPS "
-
-(let* ((yin
-         ((lambda (cc) (display \"@\") cc) (call/cc (lambda (c) c))))
-       (yang
-         ((lambda (cc) (display \"*\") cc) (call/cc (lambda (c) c)))))
-    (yin yang))
-
+((lambda (yin) 
+      ((lambda(yang) (yin yang))
+          ((lambda (cc) (display \"*\") cc) (call/cc (lambda (c) c)))
+      )
+) ((lambda (cc) (display \"@\") cc) (call/cc (lambda (c) c))))
 "
 
 printfn "Press any key to continue..."

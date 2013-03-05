@@ -5,6 +5,7 @@ open Env
 open System
 
 // Let this fail if arguments are invalid
+[<System.Diagnostics.DebuggerStepThroughAttribute()>]
 let rec PrintSexp = function  
     // Im too lazy ...
     | Syntax(_) -> "Syntax *"
@@ -29,6 +30,7 @@ let rec PrintSexp = function
     | NIL -> "NIL";; 
 
 
+[<System.Diagnostics.DebuggerStepThroughAttribute()>]
 let rec Last = 
     function
     | Cons(x, NIL) -> x
@@ -36,6 +38,7 @@ let rec Last =
     | a -> failwith "Expected a cons cell!";;
 
 
+[<System.Diagnostics.DebuggerStepThroughAttribute()>]
 let rec AppendForSplice (cons : SObject) (tail : SObject) =
     match cons with
     | Cons(h, NIL) -> Cons(h, tail)
@@ -53,7 +56,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             // Here looks the same, but the container (hopefully, a cons(_, _))
             // must be carefull!
             | UnquoteSplicing(sexpr) | Unquote(sexpr) -> 
-                ParseAstCPS env sexpr (fun x -> k x)
+                ParseAstCPS env sexpr k
             // Constructs
             | Cons(a, b) -> 
                 //Cons(WalkQuasiquote a, WalkQuasiquote b)
@@ -82,7 +85,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
                     )                    
             // Return everything else as-is
             | x -> k x
-        WalkQuasiquote sexpr (fun x -> kont x)
+        WalkQuasiquote sexpr kont //(fun x -> kont x)
     | Quote(sexpr) -> kont sexpr
     | Cons(Atom("let*"), args) ->
         match args with
@@ -107,7 +110,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
                 | _ -> failwith "Unexpected bindings!"
                             
             let transformed = transformBindings bindings            
-            ParseAstCPS env transformed (fun x -> kont x)
+            ParseAstCPS env transformed kont //(fun x -> kont x)
         | _ -> failwith "Invalid arguments to let*!"
     | Cons(Atom("let"), args) ->
         match args with
@@ -133,14 +136,14 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             // Otherwise, just execute sexpr
             match !args with
             | NIL -> 
-                ParseAstCPS env sexpr (fun x -> kont x)
+                ParseAstCPS env sexpr kont //(fun x -> kont x)
             | _ -> 
                 // create a lambda cons list
                 let as_lambda = Cons(Atom("lambda"), Cons(!args, Cons(Cons(Atom("begin"), sexpr), NIL)))
                 // and the use it for a function application
                 let transformed = Cons(as_lambda, !values)        
                 // and then we parse it!
-                ParseAstCPS env transformed (fun x -> kont x)
+                ParseAstCPS env transformed kont // (fun x -> kont x)
 
         | _ -> failwith "Invalid arguments to let!"        
     | Cons(Atom("begin"), ls) ->
@@ -151,7 +154,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
                 ParseAstCPS env h (fun h_parsed -> 
                     begin_parser tail (AppendCons acc h_parsed)
                 )
-            | NIL -> kont(Last acc)
+            | NIL -> Last acc |> kont
             | _ -> failwith "Unexpected arg!")
 
         begin_parser ls NIL
@@ -189,7 +192,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
         | Cons(Cons(fun_name, fun_args), body) ->
             // transform this into a (define fun_name (lambda fun_args body))
             let transf = Cons(Atom("define"), Cons(fun_name, Cons(Cons(Atom("lambda"), Cons(fun_args, body)), NIL)))
-            ParseAstCPS env transf (fun x -> kont x)
+            ParseAstCPS env transf kont //(fun x -> kont x)
         // GENERAL FORM
         | Cons(identifier, Cons(exp, NIL)) ->
             match identifier with
@@ -221,7 +224,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
                                     sexpr
                     | _ -> failwith "Invalid argument!")
                 // Parse body with the new environment                
-                ParseAstCPS new_env body (fun res -> k(res))))
+                ParseAstCPS new_env body k))
         | _ -> failwith "Invalid arguments to lambda!"
     | Cons(Atom("if"), args) ->
         match args with
@@ -229,9 +232,9 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             ParseAstCPS env _condition (fun conditionValue -> 
                 match conditionValue with
                 | False -> 
-                    ParseAstCPS env _false_branch (function branchValue -> kont branchValue)
+                    ParseAstCPS env _false_branch kont // (function branchValue -> kont branchValue)
                 | _ -> 
-                    ParseAstCPS env _true_branch (function branchValue -> kont branchValue)
+                    ParseAstCPS env _true_branch kont //(function branchValue -> kont branchValue)
             )
         | _ -> failwith "Invalid args to if!"
     // Function application

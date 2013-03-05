@@ -39,9 +39,10 @@ rule tokenstream = parse
 | open_paren			{ Parser.OPEN_PAREN }
 | close_paren			{ Parser.CLOSE_PAREN }
 | dot					{ Parser.DOT }
-| "nil"					{ Parser.ATOM_NIL }
+//| ("#\" notquote_char)			{ let str = LexBuffer.LexemeString lexbuf in Parser.CHAR(str.Substring(2, 1).Chars.[0]) }
 | cons_true				{ Parser.TRUE }
 | cons_false			{ Parser.FALSE }
+| "nil"					{ Parser.ATOM_NIL }
 | "begin"				{ Parser.BEGIN }
 | "define-macro"		{ Parser.DEFINE_MACRO }
 | "lambda"				{ Parser.LAMBDA }
