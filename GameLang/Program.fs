@@ -31,7 +31,10 @@ type Pang =
         let tree = Parser.Start Lexer.tokenstream (LexBuffer<char>.FromString text)
         // Parse AST
         for e in tree do
-            ParseAstCPS baseEnv e (fun x -> ignore())
+            ParseAstCPS baseEnv e (fun x -> 
+//                "top level cont" |> Console.WriteLine 
+//                x |> PrintTree |> Console.WriteLine
+                ignore())
 
 ;;
 
@@ -231,6 +234,18 @@ pang.ParseStringCPS "
       )
 ) ((lambda (cc) (display \"@\") cc) (call/cc (lambda (c) c))))
 "
+
+//pang.ParseStringCPS "
+//(define (f return)
+//  (begin
+//    (return 2)
+//    3))
+// 
+//(display (f (lambda (x) x))) ; displays 3
+// 
+//(display (call/cc f)) ; displays 2
+//
+//"
 
 printfn "Press any key to continue..."
 System.Console.ReadLine() |> ignore

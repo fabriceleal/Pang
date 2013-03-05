@@ -209,10 +209,9 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
         | Cons(arguments, Cons(body, NIL)) ->
             // Wrap executon of body in a function
             // We can create a copy of the current env
-            // so we dont forget the values of vars
-            // that might be changed
-            //let env_for_fun = env.Copy()
-            let env_for_fun = env
+            // The semantics says this should be like this!!!
+            let env_for_fun = env.Copy()
+            //let env_for_fun = env
             kont (Function_CPS(fun x k ->
                 // x holds already evaled arguments
                 // create a new environment

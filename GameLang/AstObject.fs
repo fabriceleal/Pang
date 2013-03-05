@@ -20,6 +20,8 @@ type SObject =
     | NIL
     | True
     | False
+
+    [<System.Diagnostics.DebuggerStepThroughAttribute()>]
     override this.ToString() =
         match this with
         // This is a list
@@ -41,12 +43,14 @@ type SObject =
         | False -> "#F"
         | _ -> failwith "Only for literals and values!"
 
+    [<System.Diagnostics.DebuggerStepThroughAttribute()>]
     member this.Map (f : SObject -> _) =
         match this with        
         | Cons(something, tail) -> f something :: tail.Map f
         | NIL -> []
         | _ -> failwith "Only for cons lists!"
 
+    [<System.Diagnostics.DebuggerStepThroughAttribute()>]
     member this.MapDiscard (f : SObject -> _) =
         match this with
         | Cons(something, tail) -> 
@@ -55,6 +59,7 @@ type SObject =
         | NIL -> ignore()
         | _ -> failwith "Only for cons lists!"
 
+    [<System.Diagnostics.DebuggerStepThroughAttribute()>]
     member this.Zip (another : SObject) (f : SObject -> SObject -> _) =
         match this with
         | Cons(sth, sth_tail) ->
@@ -64,6 +69,7 @@ type SObject =
         | NIL -> []
         | _ -> failwith "this is not a cons cell!"
             
+    [<System.Diagnostics.DebuggerStepThroughAttribute()>]
     member this.ZipDiscard (another : SObject) (f : SObject -> SObject -> _) =
         match this with       
         | Cons(sth, sth_tail) ->
@@ -76,6 +82,7 @@ type SObject =
         | _ -> failwith "this is not a cons cell!"
 
     // The List.Map for Cons lists
+    [<System.Diagnostics.DebuggerStepThroughAttribute()>]
     member this.ConsMap (f : SObject -> SObject) =
         match this with
         | Cons(something, tail) -> Cons(f something, tail.ConsMap f)
