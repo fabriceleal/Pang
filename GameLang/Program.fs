@@ -1,13 +1,20 @@
 ﻿module Main
 
-open AstObject
-open Ast
-open Env
-open ParseAst
+open CommandLine
+open CommandLine.Text
 
 open System
 open System.IO
 open Microsoft.FSharp.Text.Lexing
+
+
+open AstObject
+open Runtime
+open Env
+open ParseAst
+open Runtime
+
+
 
 //let ParseString text =
 //    Parser.start Lexer.tokenstream (LexBuffer<char>.FromString text)
@@ -30,11 +37,10 @@ type Pang =
         // Read file
         let tree = Parser.Start Lexer.tokenstream (LexBuffer<char>.FromString text)
         // Parse AST
-        for e in tree do
-            ParseAstCPS baseEnv e (fun x -> 
+        ParseAstCPS baseEnv tree (fun x -> 
 //                "top level cont" |> Console.WriteLine 
 //                x |> PrintTree |> Console.WriteLine
-                ignore())
+            ignore())
 
 ;;
 
@@ -247,11 +253,19 @@ let pang = new Pang(null, null)
 //
 //"
 
-// Open a REPL
+// Start a REPL
+let baseEnv = CoreEnv Console.In Console.Out
 
-//printfn "Press any key to continue..."
-//System.Console.ReadLine() |> ignore
+let rec do_stuff () =
+    Console.Write("> ")
+    SysRead NIL (fun k ->
+        ParseAstCPS baseEnv k (fun res ->
+            res.ToString() |> Console.WriteLine
 
-
+            do_stuff()
+        )
+    )
+    
+do_stuff()
 
 

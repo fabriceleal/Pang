@@ -1,4 +1,4 @@
-﻿module Ast
+﻿module Runtime
 
 open System
 open System.IO
@@ -153,15 +153,15 @@ let ``Sys=`` (args : SObject) (k : SObject -> unit) =
 //let SysEval (args : SObject) = 
 //    NIL;;
 //
-//// Read
-//
-//let SysRead (args : SObject) = 
-//    match args with
-//    | NIL ->
-//        // Read from standard input
-//        let input = Console.In
-//        Parser.Sexpr Lexer.tokenstream (LexBuffer<char>.FromTextReader input)
-//    | _ -> failwith "Expecting no arguments!";;
+// Read
+
+let SysRead (args : SObject) (k : SObject -> unit) = 
+    match args with
+    | NIL ->
+        // Read from standard input
+        let input = Console.In
+        LexBuffer<char>.FromTextReader input |> Parser.Sexpr Lexer.tokenstream |> k
+    | _ -> failwith "Expecting no arguments!";;
 //
 //let SysReadChar (args : SObject) =
 //    match args with
@@ -306,7 +306,8 @@ let CoreEnv newIn newOut =
       Put("*", Function_CPS(SysMult)).
       Put("+", Function_CPS(SysAdd)).
       Put("list", Function_CPS(SysList)).
-      Put("call/cc", Function_CPS(SysCallCC))
+      Put("call/cc", Function_CPS(SysCallCC)).
+      Put("read", Function_CPS(SysRead))
 
 
 //      Put("+", Function(SysAdd)).

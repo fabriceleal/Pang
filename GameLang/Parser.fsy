@@ -38,7 +38,8 @@ open AstObject
 
 // This is the type of the data produced by a successful reduction of the 'start'
 // symbol:
-%type < AstObject.SObject list > Start
+//%type < AstObject.SObject list > Start
+%type < AstObject.SObject > Start
 %type < AstObject.SObject > Sexpr
 
 %%
@@ -48,11 +49,11 @@ open AstObject
 Start: File EOF						{ $1 }
 
 File:
-	| Sexpr_Plus					{ $1 }
+	| Sexpr_Consed					{ Cons(Atom("begin"), $1) }
 
-Sexpr_Plus:
-	| Sexpr							{ [ $1 ] }
-	| Sexpr_Plus Sexpr				{ List.append $1 [ $2 ] }
+//Sexpr_Plus:
+//	| Sexpr							{ [ $1 ] }
+//	| Sexpr_Plus Sexpr				{ List.append $1 [ $2 ] }
 
 Sexpr:
 	| Macro							{ $1 }
