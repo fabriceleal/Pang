@@ -9,3 +9,4 @@ Parser.fs
 Parser.fsi
 
 TestResults/*
+packages/

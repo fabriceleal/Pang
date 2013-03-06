@@ -227,13 +227,13 @@ let pang = new Pang(null, null)
 //
 //"
 
-pang.ParseStringCPS "
-((lambda (yin) 
-      ((lambda(yang) (yin yang))
-          ((lambda (cc) (display \"*\") cc) (call/cc (lambda (c) c)))
-      )
-) ((lambda (cc) (display \"@\") cc) (call/cc (lambda (c) c))))
-"
+//pang.ParseStringCPS "
+//((lambda (yin) 
+//      ((lambda(yang) (yin yang))
+//          ((lambda (cc) (display \"*\") cc) (call/cc (lambda (c) c)))
+//      )
+//) ((lambda (cc) (display \"@\") cc) (call/cc (lambda (c) c))))
+//"
 
 //pang.ParseStringCPS "
 //(define (f return)
@@ -247,7 +247,11 @@ pang.ParseStringCPS "
 //
 //"
 
-printfn "Press any key to continue..."
-System.Console.ReadLine() |> ignore
+// Open a REPL
+
+//printfn "Press any key to continue..."
+//System.Console.ReadLine() |> ignore
+
+
 
 
