@@ -210,13 +210,14 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             // Wrap executon of body in a function
             // We can create a copy of the current env
             // The semantics says this should be like this!!!
-            let env_for_fun = env.Copy()
+            //let env_for_fun = env.Copy()
             //let env_for_fun = env
+            let env_for_fun = env
             kont (Function_CPS(fun x k ->
                 // x holds already evaled arguments
                 // create a new environment
                                 
-                let new_env = env_for_fun.Wrap()
+                let new_env = env_for_fun.Wrap() //.Wrap()
                 arguments.ZipDiscard x (fun name sexpr -> 
                     match name with
                     | Atom(name) -> new_env.Put(name, sexpr) |> ignore
