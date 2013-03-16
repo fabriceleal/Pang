@@ -32,16 +32,12 @@ type Pang =
 //        // Only return the result of the last expression
 //        List.rev results |> List.head
 
-    member this.ParseStringCPS (text : string) =
+    member this.ParseStringCPS (k : SObject -> unit) (text : string) =
         let baseEnv = CoreEnv this.input this.output;
         // Read file
         let tree = Parser.Start Lexer.tokenstream (LexBuffer<char>.FromString text)
         // Parse AST
-        ParseAstCPS baseEnv tree (fun x -> 
-//                "top level cont" |> Console.WriteLine 
-//                x |> PrintTree |> Console.WriteLine
-            ignore())
-
+        ParseAstCPS baseEnv tree k
 ;;
 
 //
@@ -253,19 +249,49 @@ let pang = new Pang(null, null)
 //
 //"
 
+type Options() =
+    [<Option('i', "input", Required = false, HelpText = "Input file")>]
+    member val Input = "" with get, set
+
+    [<HelpOption(HelpText="Displays this help screen.")>]
+    member this.GetUsage() = 
+        let help = new HelpText(Heading = HeadingInfo("Pang", "A subset of scheme implemented in F#").ToString(),                                 
+                                AdditionalNewLineAfterOption = true,
+                                AddDashesToOption = true)
+        help.AddPreOptionsLine("https://github.com/fabriceleal/Pang");
+        help.AddPreOptionsLine("Usage: pang [-i file] ");
+        help.AddOptions(this)
+        help.ToString();;
+   
+
+
 // Start a REPL
-let baseEnv = CoreEnv Console.In Console.Out
+let do_stuff =
+    let baseEnv = CoreEnv Console.In Console.Out
+    let rec _do_stuff() =
+        Console.Write("> ")
+        SysRead NIL (fun k ->
+            ParseAstCPS baseEnv k (fun res ->
+                res.ToString() |> Console.WriteLine
 
-let rec do_stuff () =
-    Console.Write("> ")
-    SysRead NIL (fun k ->
-        ParseAstCPS baseEnv k (fun res ->
-            res.ToString() |> Console.WriteLine
-
-            do_stuff()
+                _do_stuff()
+            )
         )
-    )
-    
-do_stuff()
+    _do_stuff;;
 
+let opt = new Options()
+let parser = new Parser()
 
+[<EntryPoint>]
+let main args =
+    if parser.ParseArguments(args, opt) then
+        if String.IsNullOrEmpty(opt.Input) then
+            // REPL!
+            do_stuff()
+        else
+            // Read file, parse!
+            File.ReadAllText(opt.Input) |> pang.ParseStringCPS ignore
+    else
+        // Print help!
+        opt.GetUsage() |> Console.WriteLine
+    0;;
