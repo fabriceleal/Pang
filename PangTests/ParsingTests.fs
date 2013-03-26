@@ -8,8 +8,7 @@ open System.Text
 open System.Diagnostics
 
 open Microsoft.VisualStudio.TestTools.UnitTesting    
-//open Parser
-open Main
+open Pang
 
 
 [<TestClass>]
@@ -22,7 +21,7 @@ type Test_UnitTest1() =
             let sb = new StringBuilder()
             use out = new StringWriter(sb)
             let pang = new Pang(null, out)
-            pang.ParseString code |> ignore
+            pang.ParseStringCPS ignore code
             let actualOutput = sb.ToString()
             // Print StdOut to somewhere where we can read
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff") |> Debug.Print 
