@@ -5,6 +5,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Pang", "GameLang\Pang.fspro
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PangTests", "PangTests\PangTests.fsproj", "{696571E8-1719-4E18-82DF-3D53476BE6A9}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SilverlightPang", "SilverlightPang\SilverlightPang.fsproj", "{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -19,6 +21,10 @@ Global
 		{696571E8-1719-4E18-82DF-3D53476BE6A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{696571E8-1719-4E18-82DF-3D53476BE6A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{696571E8-1719-4E18-82DF-3D53476BE6A9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
