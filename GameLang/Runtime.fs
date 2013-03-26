@@ -55,14 +55,16 @@ let SysCdr (args: SObject) (k : SObject -> unit) =
     | _ -> failwith "cdr expects one argument!";;
 
 
+
+#if SILVERLIGHT
+
 // The Console.Out property is changed only once this
 // is called. You can overide it as you want
 let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> (SObject -> unit) -> unit = 
-    // Change default out 
-    match newTextWriter with
-    | null -> ignore()
-    | _ -> Console.SetOut(newTextWriter)
-
+//    // Change default out 
+//    match newTextWriter with
+//    | null -> ignore()
+//    | _ -> Console.SetOut(newTextWriter)
     let __SysDisplay (args : SObject) (k : SObject -> unit) =
         match args with
         | Cons(to_display, NIL) ->
@@ -72,6 +74,30 @@ let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> (SObject -> unit) -
             String(displayed) |> k
         | _ -> failwith "display expects one argument!"
     __SysDisplay;;
+
+#else
+
+// The Console.Out property is changed only once this
+// is called. You can overide it as you want
+let MakeSysDisplay (newTextWriter : TextWriter) : SObject -> (SObject -> unit) -> unit = 
+    // Change default out 
+    match newTextWriter with
+    | null -> ignore()
+    | _ -> Console.SetOut(newTextWriter)
+    let __SysDisplay (args : SObject) (k : SObject -> unit) =
+        match args with
+        | Cons(to_display, NIL) ->
+            let displayed = to_display.ToString()
+            //Console.WriteLine "Writing ..." 
+            Console.WriteLine displayed
+            String(displayed) |> k
+        | _ -> failwith "display expects one argument!"
+    __SysDisplay;;
+
+#endif
+
+
+
 //
 //
 //// This does not evaluate exactly 
