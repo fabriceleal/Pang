@@ -85,7 +85,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
                     )                    
             // Return everything else as-is
             | x -> k x
-        WalkQuasiquote sexpr kont //(fun x -> kont x)
+        WalkQuasiquote sexpr kont
     | Quote(sexpr) -> kont sexpr
     | Cons(Atom("let*"), args) ->
         match args with
@@ -110,7 +110,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
                 | _ -> failwith "Unexpected bindings!"
                             
             let transformed = transformBindings bindings            
-            ParseAstCPS env transformed kont //(fun x -> kont x)
+            ParseAstCPS env transformed kont
         | _ -> failwith "Invalid arguments to let*!"
     | Cons(Atom("let"), args) ->
         match args with
@@ -136,14 +136,14 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             // Otherwise, just execute sexpr
             match !args with
             | NIL -> 
-                ParseAstCPS env sexpr kont //(fun x -> kont x)
+                ParseAstCPS env sexpr kont
             | _ -> 
                 // create a lambda cons list
                 let as_lambda = Cons(Atom("lambda"), Cons(!args, Cons(Cons(Atom("begin"), sexpr), NIL)))
                 // and the use it for a function application
                 let transformed = Cons(as_lambda, !values)        
                 // and then we parse it!
-                ParseAstCPS env transformed kont // (fun x -> kont x)
+                ParseAstCPS env transformed kont
 
         | _ -> failwith "Invalid arguments to let!"        
     | Cons(Atom("begin"), ls) ->
@@ -192,7 +192,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
         | Cons(Cons(fun_name, fun_args), body) ->
             // transform this into a (define fun_name (lambda fun_args body))
             let transf = Cons(Atom("define"), Cons(fun_name, Cons(Cons(Atom("lambda"), Cons(fun_args, body)), NIL)))
-            ParseAstCPS env transf kont //(fun x -> kont x)
+            ParseAstCPS env transf kont
         // GENERAL FORM
         | Cons(identifier, Cons(exp, NIL)) ->
             match identifier with
@@ -210,8 +210,6 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
             // Wrap executon of body in a function
             // We can create a copy of the current env
             // The semantics says this should be like this!!!
-            //let env_for_fun = env.Copy()
-            //let env_for_fun = env
             let env_for_fun = env
             kont (Function_CPS(fun x k ->
                 // x holds already evaled arguments
@@ -301,7 +299,7 @@ let rec ParseAstCPS (env : Env) ast (kont : SObject -> unit) : unit =
 
                 // Create the tree, then parse it!
                 ParseAstCPS new_env body (function tree -> ParseAstCPS env tree kont)
-                        
+
             | _ -> failwith "Expected a function!"
         )
     | Unquote(_) -> failwith "Unquote is only valid inside a quasiquote!"
