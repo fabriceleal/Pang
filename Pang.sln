@@ -7,6 +7,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "PangTests", "PangTests\Pang
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "SilverlightPang", "SilverlightPang\SilverlightPang.fsproj", "{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SilverlightPangDemo", "SilverlightPangDemo\SilverlightPangDemo.csproj", "{98CD64DB-62F8-4447-A8DB-61B85FB72023}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B749DDF5-B648-47BC-A98E-C5AA6B4E7A49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98CD64DB-62F8-4447-A8DB-61B85FB72023}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98CD64DB-62F8-4447-A8DB-61B85FB72023}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98CD64DB-62F8-4447-A8DB-61B85FB72023}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98CD64DB-62F8-4447-A8DB-61B85FB72023}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
